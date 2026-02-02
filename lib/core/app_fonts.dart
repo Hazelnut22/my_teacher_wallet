@@ -137,3 +137,7 @@ class AppFontStyle {
         );
   }
 }
+
+extension ContextLocaleExtension on BuildContext {
+  AppFontStyle get appFonts => AppFontStyle(this);
+}

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:my_teacher_wallet/core/route/routes.dart';
 import 'package:my_teacher_wallet/ui/screens/home/home_screen.dart';
+import 'package:my_teacher_wallet/ui/screens/main_screen.dart';
 
 Future<void> main () async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,8 +16,8 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: HomeScreen(),
+    return MaterialApp.router(
+      routerConfig: goRouter,
     );
   }
 }

@@ -40,6 +40,7 @@ const colorCardColorLight = Color(0xFFFFFFFF);
 const colorCardColorDark = Color(0xFF1E293B);
 
 const colorButtonBorder = Color(0xFFE4E4E7);
+const colorNavBarBg = Color(0xFFf7fcfc);
 
 class AppColors {
   final Color colorPrimary;
@@ -56,6 +57,7 @@ class AppColors {
   final Color colorWhite;
   final Color colorRedBox;
   final Color colorCardColor;
+  final Color colorNavBarBg;
 
   AppColors({
     required this.colorPrimary,
@@ -72,6 +74,7 @@ class AppColors {
     required this.colorWhite,
     required this.colorRedBox,
     required this.colorCardColor,
+    required this.colorNavBarBg,
   });
 }
 
@@ -90,7 +93,8 @@ final _appColorLight = AppColors(
   colorGray: colorGray,
   colorWhite: colorWhite,
   colorRedBox: colorRedBox,
-  colorCardColor: colorCardColorLight,
+  colorCardColor: colorCardColorLight, 
+  colorNavBarBg: colorNavBarBg,
 );
 
 // --- Dark Theme Implementation ---
@@ -109,6 +113,7 @@ final _appColorDark = AppColors(
   colorWhite: colorWhite,
   colorRedBox: colorRedBox,
   colorCardColor: colorCardColorDark,
+  colorNavBarBg: colorNavBarBg,
 );
 
 // --- Extensions ---
