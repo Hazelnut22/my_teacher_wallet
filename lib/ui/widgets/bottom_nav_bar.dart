@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:my_teacher_wallet/core/app_colors.dart';
 
 class BottomNavBar extends StatelessWidget {
@@ -39,22 +40,22 @@ class BottomNavBar extends StatelessWidget {
               children: [
                 NavItems(
                   onTap: () => onTap(0),
-                  icon: Icons.home,
+                  icon: FontAwesomeIcons.house,
                   isSelected: pageIndex == 0,
                 ),
                 NavItems(
                   onTap: () => onTap(1),
-                  icon: Icons.person_4,
+                  icon: FontAwesomeIcons.graduationCap,
                   isSelected: pageIndex == 1,
                 ),
                 NavItems(
                   onTap: () => onTap(2),
-                  icon: Icons.attach_money,
+                  icon: FontAwesomeIcons.dollarSign,
                   isSelected: pageIndex == 2,
                 ),
                 NavItems(
                   onTap: () => onTap(3),
-                  icon: Icons.settings,
+                  icon: FontAwesomeIcons.ellipsis,
                   isSelected: pageIndex == 3,
                 ),
               ],
