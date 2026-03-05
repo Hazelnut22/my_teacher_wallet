@@ -13,14 +13,12 @@ class StudentsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.appColors;
-    // Watch the student list from your Riverpod provider
     final studentsAsync = ref.watch(studentProvider);
 
     return Scaffold(
-      backgroundColor: colors.colorSecondary,
       appBar: AppBar(
         title: Text("Students List", style: TextStyle(color: colors.colorPrimaryText, fontWeight: FontWeight.bold)),
-        backgroundColor: colors.colorWhite,
+        backgroundColor: context.appColors.colorNavBarBg,
         elevation: 0,
       ),
       body: studentsAsync.when(
@@ -44,6 +42,7 @@ class StudentsScreen extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: colors.colorButton,
+        elevation: 0,
         onPressed: () => context.pushNamed(Routes.addStudents.name),
         child: const Icon(FontAwesomeIcons.plus, color: Colors.white),
       ),

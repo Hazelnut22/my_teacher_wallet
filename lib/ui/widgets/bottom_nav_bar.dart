@@ -12,54 +12,42 @@ class BottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        bottom: Platform.isAndroid ? 16 : 0,
-      ),
-      child: BottomAppBar(
-        elevation: 0.0,
-        color: context.appColors.colorNavBarBg,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            decoration: BoxDecoration(
-              color: context.appColors.colorNavBarBg,
-              border: Border.all(
-                color: context.appColors.colorGray,
-                width: 0.5,
+    return BottomAppBar(
+      elevation: 0.0,
+      color: context.appColors.colorNavBarBg,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          decoration: BoxDecoration(
+            color: context.appColors.colorNavBarBg,
+            border: Border.all(color: context.appColors.colorGray, width: 0.5),
+            borderRadius: BorderRadius.circular(16.0),
+          ),
+          height: 60,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              NavItems(
+                onTap: () => onTap(0),
+                icon: FontAwesomeIcons.house,
+                isSelected: pageIndex == 0,
               ),
-              borderRadius: BorderRadius.circular(
-                16.0,
-              ), 
-            ),
-            height: 60,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                NavItems(
-                  onTap: () => onTap(0),
-                  icon: FontAwesomeIcons.house,
-                  isSelected: pageIndex == 0,
-                ),
-                NavItems(
-                  onTap: () => onTap(1),
-                  icon: FontAwesomeIcons.graduationCap,
-                  isSelected: pageIndex == 1,
-                ),
-                NavItems(
-                  onTap: () => onTap(2),
-                  icon: FontAwesomeIcons.dollarSign,
-                  isSelected: pageIndex == 2,
-                ),
-                NavItems(
-                  onTap: () => onTap(3),
-                  icon: FontAwesomeIcons.ellipsis,
-                  isSelected: pageIndex == 3,
-                ),
-              ],
-            ),
+              NavItems(
+                onTap: () => onTap(1),
+                icon: FontAwesomeIcons.graduationCap,
+                isSelected: pageIndex == 1,
+              ),
+              NavItems(
+                onTap: () => onTap(2),
+                icon: FontAwesomeIcons.dollarSign,
+                isSelected: pageIndex == 2,
+              ),
+              NavItems(
+                onTap: () => onTap(3),
+                icon: FontAwesomeIcons.ellipsis,
+                isSelected: pageIndex == 3,
+              ),
+            ],
           ),
         ),
       ),
