@@ -5,6 +5,7 @@ import 'package:my_teacher_wallet/ui/screens/main_screen.dart';
 import 'package:my_teacher_wallet/ui/screens/payment_check/payment_check_screen.dart';
 import 'package:my_teacher_wallet/ui/screens/settings/settings_screen.dart';
 import 'package:my_teacher_wallet/ui/screens/student/add_student/add_student_screen.dart';
+import 'package:my_teacher_wallet/ui/screens/student/edit_student/edit_student_screen.dart';
 import 'package:my_teacher_wallet/ui/screens/student/student_detail/student_detail_screen.dart';
 import 'package:my_teacher_wallet/ui/screens/student/students_screen.dart';
 
@@ -13,8 +14,9 @@ enum Routes {
   students("students", "/students"),
   payment("payment", "/payment"),
   settings("settings", "/settings"),
-  addStudents("addStudents", "/addStudents"),
-  studentDetail("studentDetail", "/studentDetail");
+  addStudents("addStudents", "addStudents"),
+  studentDetail("studentDetail", "studentDetail"),
+  editStudent("editStudent", "editStudent");
 
   const Routes(this.name, this.path);
   final String name;
@@ -56,6 +58,16 @@ final GoRouter goRouter = GoRouter(
                     final student = state.extra as StudentEntity;
                     return StudentDetailScreen(student: student);
                   },
+                  routes: [
+                    GoRoute(
+                      path: Routes.editStudent.path,
+                      name: Routes.editStudent.name,
+                      builder: (context, state) {
+                        final student = state.extra as StudentEntity;
+                        return EditStudentScreen(student: student);
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
