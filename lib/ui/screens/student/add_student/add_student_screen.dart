@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_teacher_wallet/core/app_colors.dart';
 import 'package:my_teacher_wallet/domain/entities/student_entity.dart';
-import 'package:my_teacher_wallet/ui/screens/payment_check/payment_check_notifier.dart';
+import 'package:my_teacher_wallet/ui/screens/payment_check/providers/payment_notifier_provider.dart';
 import 'package:my_teacher_wallet/ui/screens/student/providers/student_provider.dart';
 
 class AddStudentScreen extends ConsumerStatefulWidget {

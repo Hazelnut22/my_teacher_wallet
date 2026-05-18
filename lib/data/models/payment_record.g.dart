@@ -51,7 +51,7 @@ const PaymentRecordSchema = CollectionSchema(
   getId: _paymentRecordGetId,
   getLinks: _paymentRecordGetLinks,
   attach: _paymentRecordAttach,
-  version: '3.1.0+1',
+  version: '3.1.0',
 );
 
 int _paymentRecordEstimateSize(

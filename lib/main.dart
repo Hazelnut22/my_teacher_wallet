@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_teacher_wallet/core/app_colors.dart';
-import 'package:my_teacher_wallet/core/isar_service.dart';
+import 'package:my_teacher_wallet/core/services/isar_service.dart';
 import 'package:my_teacher_wallet/core/route/routes.dart';
 import 'package:my_teacher_wallet/data/database_provider.dart';
 

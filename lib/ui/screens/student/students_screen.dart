@@ -4,7 +4,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:my_teacher_wallet/core/app_colors.dart';
 import 'package:my_teacher_wallet/core/route/routes.dart';
-import 'package:my_teacher_wallet/ui/screens/payment_check/payment_check_notifier.dart';
+import 'package:my_teacher_wallet/ui/screens/payment_check/providers/payment_notifier_provider.dart';
 import 'package:my_teacher_wallet/ui/screens/student/widgets/student_card.dart';
 
 class StudentsScreen extends ConsumerWidget {
@@ -37,7 +37,7 @@ class StudentsScreen extends ConsumerWidget {
             itemCount: students.length,
             separatorBuilder: (context, index) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
-              return StudentCard(student: students[index]);
+              return StudentCard(student: students[index], isChecklist: false,);
             },
           );
         },
