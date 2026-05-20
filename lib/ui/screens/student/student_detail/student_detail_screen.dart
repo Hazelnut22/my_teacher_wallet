@@ -7,7 +7,6 @@ import 'package:my_teacher_wallet/domain/entities/payment_record_entity.dart';
 import 'package:my_teacher_wallet/domain/entities/student_entity.dart';
 import 'package:my_teacher_wallet/core/route/routes.dart';
 import 'package:go_router/go_router.dart';
-import 'package:my_teacher_wallet/ui/screens/payment_check/providers/payment_check_notifier.dart';
 import 'package:my_teacher_wallet/ui/screens/payment_check/providers/payment_notifier_provider.dart';
 
 // Provider that loads full payment history for one student

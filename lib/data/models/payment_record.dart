@@ -13,6 +13,8 @@ class PaymentRecord {
   bool isPaid;
 
   double amountPaid;
+
+  bool isExcluded;
   
   final student = IsarLink<Student>();
 
@@ -20,6 +22,7 @@ class PaymentRecord {
     required this.month,
     this.isPaid = false,
     this.amountPaid = 0.0,
+    this.isExcluded = false,
   });
 
   PaymentRecordEntity toEntity() => PaymentRecordEntity(
@@ -27,13 +30,15 @@ class PaymentRecord {
     month: month,
     isPaid: isPaid,
     amountPaid: amountPaid,
+    isExcluded: isExcluded,
   );
 
   factory PaymentRecord.fromEntity(PaymentRecordEntity entity) {
     return PaymentRecord(
       month: entity.month,
       isPaid: entity.isPaid,
-      amountPaid: entity.amountPaid
+      amountPaid: entity.amountPaid,
+      isExcluded: entity.isExcluded,
     )..id = entity.id;
   }
 }

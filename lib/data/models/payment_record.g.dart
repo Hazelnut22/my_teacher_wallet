@@ -22,13 +22,18 @@ const PaymentRecordSchema = CollectionSchema(
       name: r'amountPaid',
       type: IsarType.double,
     ),
-    r'isPaid': PropertySchema(
+    r'isExcluded': PropertySchema(
       id: 1,
+      name: r'isExcluded',
+      type: IsarType.bool,
+    ),
+    r'isPaid': PropertySchema(
+      id: 2,
       name: r'isPaid',
       type: IsarType.bool,
     ),
     r'month': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'month',
       type: IsarType.dateTime,
     )
@@ -70,8 +75,9 @@ void _paymentRecordSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeDouble(offsets[0], object.amountPaid);
-  writer.writeBool(offsets[1], object.isPaid);
-  writer.writeDateTime(offsets[2], object.month);
+  writer.writeBool(offsets[1], object.isExcluded);
+  writer.writeBool(offsets[2], object.isPaid);
+  writer.writeDateTime(offsets[3], object.month);
 }
 
 PaymentRecord _paymentRecordDeserialize(
@@ -82,8 +88,9 @@ PaymentRecord _paymentRecordDeserialize(
 ) {
   final object = PaymentRecord(
     amountPaid: reader.readDoubleOrNull(offsets[0]) ?? 0.0,
-    isPaid: reader.readBoolOrNull(offsets[1]) ?? false,
-    month: reader.readDateTime(offsets[2]),
+    isExcluded: reader.readBoolOrNull(offsets[1]) ?? false,
+    isPaid: reader.readBoolOrNull(offsets[2]) ?? false,
+    month: reader.readDateTime(offsets[3]),
   );
   object.id = id;
   return object;
@@ -101,6 +108,8 @@ P _paymentRecordDeserializeProp<P>(
     case 1:
       return (reader.readBoolOrNull(offset) ?? false) as P;
     case 2:
+      return (reader.readBoolOrNull(offset) ?? false) as P;
+    case 3:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -325,6 +334,16 @@ extension PaymentRecordQueryFilter
   }
 
   QueryBuilder<PaymentRecord, PaymentRecord, QAfterFilterCondition>
+      isExcludedEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isExcluded',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<PaymentRecord, PaymentRecord, QAfterFilterCondition>
       isPaidEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -426,6 +445,19 @@ extension PaymentRecordQuerySortBy
     });
   }
 
+  QueryBuilder<PaymentRecord, PaymentRecord, QAfterSortBy> sortByIsExcluded() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isExcluded', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PaymentRecord, PaymentRecord, QAfterSortBy>
+      sortByIsExcludedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isExcluded', Sort.desc);
+    });
+  }
+
   QueryBuilder<PaymentRecord, PaymentRecord, QAfterSortBy> sortByIsPaid() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isPaid', Sort.asc);
@@ -478,6 +510,19 @@ extension PaymentRecordQuerySortThenBy
     });
   }
 
+  QueryBuilder<PaymentRecord, PaymentRecord, QAfterSortBy> thenByIsExcluded() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isExcluded', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PaymentRecord, PaymentRecord, QAfterSortBy>
+      thenByIsExcludedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isExcluded', Sort.desc);
+    });
+  }
+
   QueryBuilder<PaymentRecord, PaymentRecord, QAfterSortBy> thenByIsPaid() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isPaid', Sort.asc);
@@ -511,6 +556,12 @@ extension PaymentRecordQueryWhereDistinct
     });
   }
 
+  QueryBuilder<PaymentRecord, PaymentRecord, QDistinct> distinctByIsExcluded() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'isExcluded');
+    });
+  }
+
   QueryBuilder<PaymentRecord, PaymentRecord, QDistinct> distinctByIsPaid() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isPaid');
@@ -535,6 +586,12 @@ extension PaymentRecordQueryProperty
   QueryBuilder<PaymentRecord, double, QQueryOperations> amountPaidProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'amountPaid');
+    });
+  }
+
+  QueryBuilder<PaymentRecord, bool, QQueryOperations> isExcludedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'isExcluded');
     });
   }
 

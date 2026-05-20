@@ -17,4 +17,10 @@ class AppConfigService {
     await prefs.setString(_keyFirstUseDate, firstUse.toIso8601String());
     return firstUse;
   }
+
+  /// Clears all shared_preferences data (called on reset).
+  static Future<void> reset() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+  }
 }

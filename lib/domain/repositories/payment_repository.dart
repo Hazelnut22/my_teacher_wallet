@@ -14,4 +14,8 @@ abstract class PaymentRepository {
   /// Toggle isPaid for a specific payment record.
   /// Sets amountPaid = studentMonthlyFee if isPaid, else 0.
   Future<void> togglePayment(int paymentId, bool isPaid, double monthlyFee);
+
+  /// Toggle excluded status for a student in a specific month.
+  /// When excluded, isPaid is reset to false and amountPaid to 0.
+  Future<void> toggleExcluded(int paymentId, bool isExcluded);
 }

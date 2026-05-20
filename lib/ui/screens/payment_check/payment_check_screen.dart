@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_teacher_wallet/core/app_colors.dart';
-import 'package:my_teacher_wallet/ui/screens/payment_check/providers/payment_check_notifier.dart';
-import 'package:my_teacher_wallet/ui/screens/student/widgets/student_card.dart';
+import 'package:my_teacher_wallet/domain/entities/student_entity.dart';
+import 'package:my_teacher_wallet/ui/screens/payment_check/providers/payment_notifier_provider.dart';
 
 class PaymentCheckScreen extends ConsumerWidget {
   const PaymentCheckScreen({super.key});
@@ -18,7 +18,7 @@ class PaymentCheckScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.appColors;
-    final stateAsync = ref.watch(paymentCheckProvider);
+    final stateAsync = ref.watch(paymentProvider);
 
     return Scaffold(
       backgroundColor: colors.colorNavBarBg,
@@ -34,14 +34,19 @@ class PaymentCheckScreen extends ConsumerWidget {
       body: stateAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
-        data: (checkState) {
-          final students = checkState.students;
-          final paidCount = students
+        data: (paymentState) {
+          final students = paymentState.checkStudents;
+          final stats = paymentState.yearlyStats;
+
+          // Only count non-excluded for totals
+          final activeStudents =
+              students.where((s) => !s.isExcludedThisMonth).toList();
+          final paidCount = activeStudents
               .where((s) => s.payments.isNotEmpty && s.payments.first.isPaid)
               .length;
-          final totalExpected = students.fold<double>(
+          final totalExpected = activeStudents.fold<double>(
               0, (sum, s) => sum + s.monthlyFee);
-          final totalCollected = students.fold<double>(0, (sum, s) {
+          final totalCollected = activeStudents.fold<double>(0, (sum, s) {
             return sum +
                 s.payments.fold<double>(
                     0, (s2, p) => s2 + (p.isPaid ? p.amountPaid : 0));
@@ -49,114 +54,235 @@ class PaymentCheckScreen extends ConsumerWidget {
 
           return Column(
             children: [
-              // ── Month filter + summary ──────────────────────────────────
-              Container(
-                margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: colors.colorSecondary,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Column(
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(16),
                   children: [
-                    Row(
-                      children: [
-                        Icon(Icons.calendar_month,
-                            color: colors.colorPrimary, size: 18),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<DateTime>(
-                              value: checkState.selectedMonth,
-                              isDense: true,
+                    // ── Generate Report placeholder ─────────────────────
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: colors.colorPrimary.withOpacity(0.06),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                            color: colors.colorPrimary.withOpacity(0.2)),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: colors.colorPrimary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(Icons.summarize_outlined,
+                                color: colors.colorPrimary, size: 22),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Generate Monthly Report',
+                                  style: TextStyle(
+                                    color: colors.colorPrimaryText,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                Text(
+                                  'Coming soon',
+                                  style: TextStyle(
+                                      color: colors.colorSecondaryText,
+                                      fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: colors.colorGray.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              'Soon',
                               style: TextStyle(
-                                color: colors.colorPrimaryText,
+                                color: colors.colorGray,
+                                fontSize: 11,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 15,
                               ),
-                              dropdownColor: colors.colorWhite,
-                              borderRadius: BorderRadius.circular(12),
-                              items: checkState.availableMonths
-                                  .map((month) => DropdownMenuItem(
-                                        value: month,
-                                        child: Text(_formatMonth(month)),
-                                      ))
-                                  .toList(),
-                              onChanged: checkState.isLoading
-                                  ? null
-                                  : (month) {
-                                      if (month != null) {
-                                        ref
-                                            .read(paymentCheckProvider.notifier)
-                                            .selectMonth(month);
-                                      }
-                                    },
                             ),
                           ),
-                        ),
-                        if (checkState.isLoading)
-                          SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: colors.colorPrimary,
-                            ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
+
                     const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        _SummaryChip(
-                          label: 'Paid',
-                          value: '$paidCount/${students.length}',
-                          color: Colors.green,
-                        ),
-                        const SizedBox(width: 8),
-                        _SummaryChip(
-                          label: 'Collected',
-                          value:
-                              '${totalCollected.toStringAsFixed(0)} MMK',
-                          color: colors.colorPrimary,
-                        ),
-                        const SizedBox(width: 8),
-                        _SummaryChip(
-                          label: 'Pending',
-                          value:
-                              '${(totalExpected - totalCollected).toStringAsFixed(0)} MMK',
-                          color: colors.colorRedBox,
-                        ),
-                      ],
+
+                    // ── Yearly stats ────────────────────────────────────
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: colors.colorWhite,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: colors.colorDivider),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.bar_chart,
+                                  color: colors.colorPrimary, size: 18),
+                              const SizedBox(width: 6),
+                              Text(
+                                '${DateTime.now().year} Overview',
+                                style: TextStyle(
+                                  color: colors.colorPrimaryText,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          Row(
+                            children: [
+                              _YearStatItem(
+                                label: 'Collected',
+                                value:
+                                    '${stats.totalCollectedYear.toStringAsFixed(0)} MMK',
+                                color: Colors.green,
+                              ),
+                              _YearStatItem(
+                                label: 'Monthly Avg',
+                                value:
+                                    '${stats.monthlyAverage.toStringAsFixed(0)} MMK',
+                                color: colors.colorPrimary,
+                              ),
+                              _YearStatItem(
+                                label: 'Collection Rate',
+                                value:
+                                    '${(stats.collectionRate * 100).toStringAsFixed(1)}%',
+                                color: stats.collectionRate >= 0.8
+                                    ? Colors.green
+                                    : colors.colorRedBox,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
+
+                    const SizedBox(height: 12),
+
+                    // ── Month filter ────────────────────────────────────
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: colors.colorSecondary,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.calendar_month,
+                                  color: colors.colorPrimary, size: 18),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<DateTime>(
+                                    value: paymentState.selectedMonth,
+                                    isDense: true,
+                                    style: TextStyle(
+                                      color: colors.colorPrimaryText,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
+                                    dropdownColor: colors.colorWhite,
+                                    borderRadius: BorderRadius.circular(12),
+                                    items: paymentState.availableMonths
+                                        .map((month) => DropdownMenuItem(
+                                              value: month,
+                                              child: Text(
+                                                  _formatMonth(month)),
+                                            ))
+                                        .toList(),
+                                    onChanged: paymentState.isCheckLoading
+                                        ? null
+                                        : (month) {
+                                            if (month != null) {
+                                              ref
+                                                  .read(paymentProvider
+                                                      .notifier)
+                                                  .selectMonth(month);
+                                            }
+                                          },
+                                  ),
+                                ),
+                              ),
+                              if (paymentState.isCheckLoading)
+                                SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: colors.colorPrimary,
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              _SummaryChip(
+                                label: 'Paid',
+                                value: '$paidCount/${activeStudents.length}',
+                                color: Colors.green,
+                              ),
+                              const SizedBox(width: 8),
+                              _SummaryChip(
+                                label: 'Collected',
+                                value:
+                                    '${totalCollected.toStringAsFixed(0)} MMK',
+                                color: colors.colorPrimary,
+                              ),
+                              const SizedBox(width: 8),
+                              _SummaryChip(
+                                label: 'Pending',
+                                value:
+                                    '${(totalExpected - totalCollected).toStringAsFixed(0)} MMK',
+                                color: colors.colorRedBox,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // ── Student checklist ───────────────────────────────
+                    if (students.isEmpty)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(32),
+                          child: Text('No students found.',
+                              style: TextStyle(color: colors.colorHint)),
+                        ),
+                      )
+                    else
+                      ...students.map((student) => Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: _ChecklistCard(student: student),
+                          )),
                   ],
                 ),
               ),
-
-              const SizedBox(height: 8),
-
-              // ── Student checklist ───────────────────────────────────────
-              if (students.isEmpty)
-                Expanded(
-                  child: Center(
-                    child: Text(
-                      'No students found.',
-                      style: TextStyle(color: colors.colorHint),
-                    ),
-                  ),
-                )
-              else
-                Expanded(
-                  child: ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: students.length,
-                    separatorBuilder: (_, __) =>
-                        const SizedBox(height: 10),
-                    itemBuilder: (context, index) {
-                      return StudentCard(student: students[index], isChecklist: true,);
-                    },
-                  ),
-                ),
             ],
           );
         },
@@ -165,16 +291,229 @@ class PaymentCheckScreen extends ConsumerWidget {
   }
 }
 
+// ── Checklist card with exclude bottom sheet ──────────────────────────────────
+
+class _ChecklistCard extends ConsumerWidget {
+  final StudentEntity student;
+
+  const _ChecklistCard({required this.student});
+
+  void _showManageSheet(BuildContext context, WidgetRef ref) {
+    final colors = context.appColors;
+    final isExcluded = student.isExcludedThisMonth;
+    final paymentId =
+        student.payments.isNotEmpty ? student.payments.first.id : null;
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+        decoration: BoxDecoration(
+          color: colors.colorNavBarBg,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: colors.colorGray.withOpacity(0.4),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              student.name,
+              style: TextStyle(
+                color: colors.colorPrimaryText,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            Text(
+              'Grade: ${student.grade}',
+              style: TextStyle(
+                  color: colors.colorSecondaryText, fontSize: 13),
+            ),
+            const SizedBox(height: 20),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: isExcluded
+                      ? Colors.green.withOpacity(0.1)
+                      : colors.colorRedBox.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  isExcluded
+                      ? Icons.person_add_outlined
+                      : Icons.person_remove_outlined,
+                  color: isExcluded ? Colors.green : colors.colorRedBox,
+                ),
+              ),
+              title: Text(
+                isExcluded
+                    ? 'Include this student'
+                    : 'Exclude this student',
+                style: TextStyle(
+                  color: isExcluded ? Colors.green : colors.colorRedBox,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              subtitle: Text(
+                isExcluded
+                    ? 'Student will be added back to this month\'s payment list'
+                    : 'Student won\'t count towards this month\'s total',
+                style: TextStyle(
+                    color: colors.colorSecondaryText, fontSize: 12),
+              ),
+              onTap: () async {
+                Navigator.pop(ctx);
+                if (paymentId != null) {
+                  await ref
+                      .read(paymentProvider.notifier)
+                      .toggleExcluded(paymentId, !isExcluded);
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.appColors;
+    final isExcluded = student.isExcludedThisMonth;
+    final hasPayment = student.payments.isNotEmpty;
+    final isPaid = hasPayment && student.payments.first.isPaid && !isExcluded;
+    final paymentId = hasPayment ? student.payments.first.id : null;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isExcluded
+            ? colors.colorGray.withOpacity(0.06)
+            : colors.colorWhite,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isExcluded
+              ? colors.colorGray.withOpacity(0.3)
+              : isPaid
+                  ? Colors.green.withOpacity(0.4)
+                  : colors.colorDivider,
+        ),
+      ),
+      child: ListTile(
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        leading: CircleAvatar(
+          backgroundColor: isExcluded
+              ? colors.colorGray.withOpacity(0.15)
+              : isPaid
+                  ? Colors.green.withOpacity(0.1)
+                  : colors.colorSecondary,
+          child: Text(
+            student.name[0].toUpperCase(),
+            style: TextStyle(
+              color: isExcluded
+                  ? colors.colorGray
+                  : isPaid
+                      ? Colors.green
+                      : colors.colorPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        title: Text(
+          student.name,
+          style: TextStyle(
+            color: isExcluded ? colors.colorGray : colors.colorPrimaryText,
+            fontWeight: FontWeight.w600,
+            decoration:
+                isExcluded ? TextDecoration.lineThrough : null,
+          ),
+        ),
+        subtitle: Text(
+          isExcluded
+              ? 'Excluded this month'
+              : 'Grade: ${student.grade}  •  ${student.monthlyFee.toStringAsFixed(0)} MMK',
+          style: TextStyle(
+              color: colors.colorSecondaryText, fontSize: 12),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Manage button (⋮)
+            GestureDetector(
+              onTap: () => _showManageSheet(context, ref),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Icon(Icons.more_vert,
+                    color: colors.colorGray, size: 20),
+              ),
+            ),
+            const SizedBox(width: 4),
+            // Toggle
+            if (!isExcluded && paymentId != null)
+              GestureDetector(
+                onTap: () => ref
+                    .read(paymentProvider.notifier)
+                    .togglePayment(paymentId, !isPaid, student.monthlyFee),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 52,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: isPaid ? Colors.green : colors.colorDivider,
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: AnimatedAlign(
+                    duration: const Duration(milliseconds: 200),
+                    alignment: isPaid
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      margin:
+                          const EdgeInsets.symmetric(horizontal: 3),
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            else if (isExcluded)
+              Icon(Icons.remove_circle_outline,
+                  color: colors.colorGray, size: 22),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Small reusable widgets ────────────────────────────────────────────────────
+
 class _SummaryChip extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
 
-  const _SummaryChip({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
+  const _SummaryChip(
+      {required this.label, required this.value, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -196,9 +535,39 @@ class _SummaryChip extends StatelessWidget {
                 style: TextStyle(
                     color: color,
                     fontWeight: FontWeight.bold,
-                    fontSize: 13)),
+                    fontSize: 12)),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _YearStatItem extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+
+  const _YearStatItem(
+      {required this.label, required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              style: TextStyle(
+                  color: context.appColors.colorSecondaryText,
+                  fontSize: 11)),
+          const SizedBox(height: 4),
+          Text(value,
+              style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13)),
+        ],
       ),
     );
   }

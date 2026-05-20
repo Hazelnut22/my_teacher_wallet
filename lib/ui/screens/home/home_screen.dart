@@ -8,18 +8,8 @@ class HomeScreen extends ConsumerWidget {
 
   String _monthName(int month) {
     const months = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December',
     ];
     return months[month - 1];
   }
@@ -28,40 +18,44 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.appColors;
     final now = DateTime.now();
-    final studentsAsync = ref.watch(paymentProvider);
+    final stateAsync = ref.watch(paymentProvider);
 
     return Scaffold(
       backgroundColor: colors.colorNavBarBg,
       body: SafeArea(
-        child: studentsAsync.when(
+        child: stateAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text("Error: $e")),
-          data: (students) {
-            final totalExpected = students.fold<double>(
-              0,
-              (sum, s) => sum + s.monthlyFee,
-            );
-            final totalCollected = students.fold<double>(0, (sum, s) {
-              final paid = s.payments
-                  .where((p) => p.isPaid)
-                  .fold<double>(0, (s2, p) => s2 + p.amountPaid);
-              return sum + paid;
+          error: (e, _) => Center(child: Text('Error: $e')),
+          data: (paymentState) {
+            final students = paymentState.currentMonthStudents;
+            // Only count non-excluded students for totals
+            final activeStudents =
+                students.where((s) => !s.isExcludedThisMonth).toList();
+            final pendingStudents =
+                activeStudents.where((s) => s.payments.isNotEmpty && !s.payments.first.isPaid).toList();
+
+            final totalExpected = activeStudents.fold<double>(
+                0, (sum, s) => sum + s.monthlyFee);
+            final totalCollected = activeStudents.fold<double>(0, (sum, s) {
+              return sum +
+                  s.payments.fold<double>(
+                      0, (s2, p) => s2 + (p.isPaid ? p.amountPaid : 0));
             });
-            final paidCount = students
+            final paidCount = activeStudents
                 .where((s) => s.payments.any((p) => p.isPaid))
                 .length;
-            final progress = totalExpected == 0
-                ? 0.0
-                : totalCollected / totalExpected;
+            final progress =
+                totalExpected == 0 ? 0.0 : totalCollected / totalExpected;
 
             return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header
+                  // ── Header ──────────────────────────────────────────────
                   Text(
-                    "My Teacher Wallet",
+                    'My Teacher Wallet',
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -70,21 +64,22 @@ class HomeScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "${_monthName(now.month)} ${now.year}",
+                    '${_monthName(now.month)} ${now.year}',
                     style: TextStyle(
-                      fontSize: 14,
-                      color: colors.colorSecondaryText,
-                    ),
+                        fontSize: 14, color: colors.colorSecondaryText),
                   ),
                   const SizedBox(height: 24),
 
-                  // Main income card
+                  // ── Main income card ────────────────────────────────────
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [colors.colorPrimary, const Color(0xFF0D5AC4)],
+                        colors: [
+                          colors.colorPrimary,
+                          const Color(0xFF0D5AC4)
+                        ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -101,15 +96,14 @@ class HomeScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Total Collected",
+                          'Total Collected',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.85),
-                            fontSize: 13,
-                          ),
+                              color: Colors.white.withOpacity(0.85),
+                              fontSize: 13),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          "${totalCollected.toStringAsFixed(0)} MMK",
+                          '${totalCollected.toStringAsFixed(0)} MMK',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 32,
@@ -117,36 +111,35 @@ class HomeScreen extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(height: 20),
-                        // Progress bar
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: LinearProgressIndicator(
                             value: progress,
                             minHeight: 8,
-                            backgroundColor: Colors.white.withOpacity(0.25),
-                            valueColor: const AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
+                            backgroundColor:
+                                Colors.white.withOpacity(0.25),
+                            valueColor:
+                                const AlwaysStoppedAnimation<Color>(
+                                    Colors.white),
                           ),
                         ),
                         const SizedBox(height: 10),
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          mainAxisAlignment:
+                              MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              "$paidCount of ${students.length} students paid",
+                              '$paidCount of ${activeStudents.length} students paid',
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.85),
-                                fontSize: 12,
-                              ),
+                                  color: Colors.white.withOpacity(0.85),
+                                  fontSize: 12),
                             ),
                             Text(
-                              "${(progress * 100).toStringAsFixed(0)}%",
+                              '${(progress * 100).toStringAsFixed(0)}%',
                               style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold),
                             ),
                           ],
                         ),
@@ -156,13 +149,14 @@ class HomeScreen extends ConsumerWidget {
 
                   const SizedBox(height: 16),
 
-                  // Stats row
+                  // ── Stats row ────────────────────────────────────────────
                   Row(
                     children: [
                       Expanded(
                         child: _StatCard(
-                          label: "Expected",
-                          value: "${totalExpected.toStringAsFixed(0)} MMK",
+                          label: 'Expected',
+                          value:
+                              '${totalExpected.toStringAsFixed(0)} MMK',
                           icon: Icons.account_balance_wallet_outlined,
                           color: colors.colorPrimary,
                           bgColor: colors.colorSecondary,
@@ -171,9 +165,9 @@ class HomeScreen extends ConsumerWidget {
                       const SizedBox(width: 12),
                       Expanded(
                         child: _StatCard(
-                          label: "Pending",
+                          label: 'Pending',
                           value:
-                              "${(totalExpected - totalCollected).toStringAsFixed(0)} MMK",
+                              '${(totalExpected - totalCollected).toStringAsFixed(0)} MMK',
                           icon: Icons.pending_actions_outlined,
                           color: colors.colorRedBox,
                           bgColor: colors.colorRedBox.withOpacity(0.08),
@@ -184,9 +178,102 @@ class HomeScreen extends ConsumerWidget {
 
                   const SizedBox(height: 24),
 
-                  // Student breakdown
+                  // ── Pending students ─────────────────────────────────────
+                  if (pendingStudents.isNotEmpty) ...[
+                    Row(
+                      children: [
+                        Text(
+                          'Pending Students',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: colors.colorPrimaryText,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: colors.colorRedBox.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '${pendingStudents.length}',
+                            style: TextStyle(
+                              color: colors.colorRedBox,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    ...pendingStudents.map((student) => Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: colors.colorWhite,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                                color: colors.colorRedBox.withOpacity(0.2)),
+                          ),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 18,
+                                backgroundColor:
+                                    colors.colorRedBox.withOpacity(0.1),
+                                child: Text(
+                                  student.name[0].toUpperCase(),
+                                  style: TextStyle(
+                                    color: colors.colorRedBox,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      student.name,
+                                      style: TextStyle(
+                                        color: colors.colorPrimaryText,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Grade: ${student.grade}',
+                                      style: TextStyle(
+                                          color: colors.colorSecondaryText,
+                                          fontSize: 12),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Text(
+                                '${student.monthlyFee.toStringAsFixed(0)} MMK',
+                                style: TextStyle(
+                                  color: colors.colorRedBox,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )),
+                    const SizedBox(height: 24),
+                  ],
+
+                  // ── This month all students ──────────────────────────────
                   Text(
-                    "This Month",
+                    'This Month',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -200,7 +287,7 @@ class HomeScreen extends ConsumerWidget {
                       child: Padding(
                         padding: const EdgeInsets.all(32.0),
                         child: Text(
-                          "No students yet.\nAdd students from the Students tab.",
+                          'No students yet.\nAdd students from the Students tab.',
                           textAlign: TextAlign.center,
                           style: TextStyle(color: colors.colorHint),
                         ),
@@ -208,13 +295,13 @@ class HomeScreen extends ConsumerWidget {
                     )
                   else
                     ...students.map((student) {
-                      final isPaid = student.payments.any((p) => p.isPaid);
+                      final isPaid =
+                          student.payments.any((p) => p.isPaid);
+                      final isExcluded = student.isExcludedThisMonth;
                       return Container(
                         margin: const EdgeInsets.only(bottom: 10),
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
+                            horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
                           color: colors.colorWhite,
                           borderRadius: BorderRadius.circular(12),
@@ -224,15 +311,19 @@ class HomeScreen extends ConsumerWidget {
                           children: [
                             CircleAvatar(
                               radius: 18,
-                              backgroundColor: isPaid
-                                  ? Colors.green.withOpacity(0.1)
-                                  : colors.colorSecondary,
+                              backgroundColor: isExcluded
+                                  ? colors.colorGray.withOpacity(0.15)
+                                  : isPaid
+                                      ? Colors.green.withOpacity(0.1)
+                                      : colors.colorSecondary,
                               child: Text(
                                 student.name[0].toUpperCase(),
                                 style: TextStyle(
-                                  color: isPaid
-                                      ? Colors.green
-                                      : colors.colorPrimary,
+                                  color: isExcluded
+                                      ? colors.colorGray
+                                      : isPaid
+                                          ? Colors.green
+                                          : colors.colorPrimary,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 13,
                                 ),
@@ -243,28 +334,37 @@ class HomeScreen extends ConsumerWidget {
                               child: Text(
                                 student.name,
                                 style: TextStyle(
-                                  color: colors.colorPrimaryText,
+                                  color: isExcluded
+                                      ? colors.colorGray
+                                      : colors.colorPrimaryText,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
+                                  horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: isPaid
-                                    ? Colors.green.withOpacity(0.1)
-                                    : colors.colorRedBox.withOpacity(0.08),
+                                color: isExcluded
+                                    ? colors.colorGray.withOpacity(0.1)
+                                    : isPaid
+                                        ? Colors.green.withOpacity(0.1)
+                                        : colors.colorRedBox
+                                            .withOpacity(0.08),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
-                                isPaid ? "Paid" : "Pending",
+                                isExcluded
+                                    ? 'Excluded'
+                                    : isPaid
+                                        ? 'Paid'
+                                        : 'Pending',
                                 style: TextStyle(
-                                  color: isPaid
-                                      ? Colors.green
-                                      : colors.colorRedBox,
+                                  color: isExcluded
+                                      ? colors.colorGray
+                                      : isPaid
+                                          ? Colors.green
+                                          : colors.colorRedBox,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 12,
                                 ),
@@ -304,27 +404,21 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(14),
-      ),
+          color: bgColor, borderRadius: BorderRadius.circular(14)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, color: color, size: 20),
           const SizedBox(height: 8),
-          Text(
-            label,
-            style: TextStyle(color: color.withOpacity(0.8), fontSize: 12),
-          ),
+          Text(label,
+              style:
+                  TextStyle(color: color.withOpacity(0.8), fontSize: 12)),
           const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
-          ),
+          Text(value,
+              style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14)),
         ],
       ),
     );
