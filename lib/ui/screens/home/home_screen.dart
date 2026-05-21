@@ -3,6 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_teacher_wallet/core/app_colors.dart';
 import 'package:my_teacher_wallet/ui/screens/payment_check/providers/payment_notifier_provider.dart';
 
+String _mmk(double value) {
+  final formatted = value.toInt().toString().replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+        (m) => '${m[1]},',
+      );
+  return '$formatted MMK';
+}
+
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -27,12 +35,14 @@ class HomeScreen extends ConsumerWidget {
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Center(child: Text('Error: $e')),
           data: (paymentState) {
+            // currentMonthStudents already sorted: Paid → Unpaid → Excluded
             final students = paymentState.currentMonthStudents;
-            // Only count non-excluded students for totals
             final activeStudents =
                 students.where((s) => !s.isExcludedThisMonth).toList();
-            final pendingStudents =
-                activeStudents.where((s) => s.payments.isNotEmpty && !s.payments.first.isPaid).toList();
+            final pendingStudents = activeStudents
+                .where((s) =>
+                    s.payments.isEmpty || !s.payments.first.isPaid)
+                .toList();
 
             final totalExpected = activeStudents.fold<double>(
                 0, (sum, s) => sum + s.monthlyFee);
@@ -44,16 +54,17 @@ class HomeScreen extends ConsumerWidget {
             final paidCount = activeStudents
                 .where((s) => s.payments.any((p) => p.isPaid))
                 .length;
-            final progress =
-                totalExpected == 0 ? 0.0 : totalCollected / totalExpected;
+            final progress = totalExpected == 0
+                ? 0.0
+                : totalCollected / totalExpected;
 
             return SingleChildScrollView(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 20, vertical: 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── Header ──────────────────────────────────────────────
+                  // ── Header ────────────────────────────────────────────
                   Text(
                     'My Teacher Wallet',
                     style: TextStyle(
@@ -70,7 +81,7 @@ class HomeScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 24),
 
-                  // ── Main income card ────────────────────────────────────
+                  // ── Income card ───────────────────────────────────────
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(24),
@@ -103,10 +114,10 @@ class HomeScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          '${totalCollected.toStringAsFixed(0)} MMK',
+                          _mmk(totalCollected),
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 32,
+                            fontSize: 28,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -149,14 +160,13 @@ class HomeScreen extends ConsumerWidget {
 
                   const SizedBox(height: 16),
 
-                  // ── Stats row ────────────────────────────────────────────
+                  // ── Stats row ─────────────────────────────────────────
                   Row(
                     children: [
                       Expanded(
                         child: _StatCard(
                           label: 'Expected',
-                          value:
-                              '${totalExpected.toStringAsFixed(0)} MMK',
+                          value: _mmk(totalExpected),
                           icon: Icons.account_balance_wallet_outlined,
                           color: colors.colorPrimary,
                           bgColor: colors.colorSecondary,
@@ -166,8 +176,7 @@ class HomeScreen extends ConsumerWidget {
                       Expanded(
                         child: _StatCard(
                           label: 'Pending',
-                          value:
-                              '${(totalExpected - totalCollected).toStringAsFixed(0)} MMK',
+                          value: _mmk(totalExpected - totalCollected),
                           icon: Icons.pending_actions_outlined,
                           color: colors.colorRedBox,
                           bgColor: colors.colorRedBox.withOpacity(0.08),
@@ -178,7 +187,7 @@ class HomeScreen extends ConsumerWidget {
 
                   const SizedBox(height: 24),
 
-                  // ── Pending students ─────────────────────────────────────
+                  // ── Pending students ──────────────────────────────────
                   if (pendingStudents.isNotEmpty) ...[
                     Row(
                       children: [
@@ -218,7 +227,8 @@ class HomeScreen extends ConsumerWidget {
                             color: colors.colorWhite,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                                color: colors.colorRedBox.withOpacity(0.2)),
+                                color:
+                                    colors.colorRedBox.withOpacity(0.2)),
                           ),
                           child: Row(
                             children: [
@@ -258,7 +268,7 @@ class HomeScreen extends ConsumerWidget {
                                 ),
                               ),
                               Text(
-                                '${student.monthlyFee.toStringAsFixed(0)} MMK',
+                                _mmk(student.monthlyFee),
                                 style: TextStyle(
                                   color: colors.colorRedBox,
                                   fontWeight: FontWeight.bold,
@@ -271,14 +281,25 @@ class HomeScreen extends ConsumerWidget {
                     const SizedBox(height: 24),
                   ],
 
-                  // ── This month all students ──────────────────────────────
-                  Text(
-                    'This Month',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: colors.colorPrimaryText,
-                    ),
+                  // ── This month (Paid → Excluded) ──────────────────────
+                  Row(
+                    children: [
+                      Text(
+                        'This Month',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: colors.colorPrimaryText,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${students.length} student${students.length == 1 ? '' : 's'}',
+                        style: TextStyle(
+                            color: colors.colorSecondaryText,
+                            fontSize: 12),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 12),
 
@@ -294,6 +315,7 @@ class HomeScreen extends ConsumerWidget {
                       ),
                     )
                   else
+                    // Sorted: Paid → Unpaid → Excluded (from notifier)
                     ...students.map((student) {
                       final isPaid =
                           student.payments.any((p) => p.isPaid);
@@ -305,7 +327,8 @@ class HomeScreen extends ConsumerWidget {
                         decoration: BoxDecoration(
                           color: colors.colorWhite,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: colors.colorDivider),
+                          border:
+                              Border.all(color: colors.colorDivider),
                         ),
                         child: Row(
                           children: [
@@ -411,14 +434,14 @@ class _StatCard extends StatelessWidget {
           Icon(icon, color: color, size: 20),
           const SizedBox(height: 8),
           Text(label,
-              style:
-                  TextStyle(color: color.withOpacity(0.8), fontSize: 12)),
+              style: TextStyle(
+                  color: color.withOpacity(0.8), fontSize: 12)),
           const SizedBox(height: 4),
           Text(value,
               style: TextStyle(
                   color: color,
                   fontWeight: FontWeight.bold,
-                  fontSize: 14)),
+                  fontSize: 13)),
         ],
       ),
     );

@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:my_teacher_wallet/core/app_colors.dart';
+import 'package:my_teacher_wallet/core/route/routes.dart';
 import 'package:my_teacher_wallet/domain/entities/student_entity.dart';
 import 'package:my_teacher_wallet/ui/screens/payment_check/providers/payment_notifier_provider.dart';
+
+String _mmk(double value) {
+  final formatted = value.toInt().toString().replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+        (m) => '${m[1]},',
+      );
+  return '$formatted MMK';
+}
 
 class PaymentCheckScreen extends ConsumerWidget {
   const PaymentCheckScreen({super.key});
@@ -30,19 +40,25 @@ class PaymentCheckScreen extends ConsumerWidget {
         ),
         backgroundColor: colors.colorNavBarBg,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.summarize_outlined, color: colors.colorPrimary),
+            onPressed: () => context.pushNamed(Routes.reports.name),
+          ),
+        ],
       ),
       body: stateAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (paymentState) {
+          // checkStudents already sorted: Unpaid → Paid → Excluded
           final students = paymentState.checkStudents;
           final stats = paymentState.yearlyStats;
-
-          // Only count non-excluded for totals
           final activeStudents =
               students.where((s) => !s.isExcludedThisMonth).toList();
           final paidCount = activeStudents
-              .where((s) => s.payments.isNotEmpty && s.payments.first.isPaid)
+              .where((s) =>
+                  s.payments.isNotEmpty && s.payments.first.isPaid)
               .length;
           final totalExpected = activeStudents.fold<double>(
               0, (sum, s) => sum + s.monthlyFee);
@@ -52,237 +68,163 @@ class PaymentCheckScreen extends ConsumerWidget {
                     0, (s2, p) => s2 + (p.isPaid ? p.amountPaid : 0));
           });
 
-          return Column(
+          return ListView(
+            padding: const EdgeInsets.all(16),
             children: [
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.all(16),
+              // ── Yearly stats ──────────────────────────────────────────
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: colors.colorWhite,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: colors.colorDivider),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ── Generate Report placeholder ─────────────────────
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: colors.colorPrimary.withOpacity(0.06),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                            color: colors.colorPrimary.withOpacity(0.2)),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: colors.colorPrimary.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(Icons.summarize_outlined,
-                                color: colors.colorPrimary, size: 22),
+                    Row(
+                      children: [
+                        Icon(Icons.bar_chart,
+                            color: colors.colorPrimary, size: 18),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${DateTime.now().year} Overview',
+                          style: TextStyle(
+                            color: colors.colorPrimaryText,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
                           ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Generate Monthly Report',
-                                  style: TextStyle(
-                                    color: colors.colorPrimaryText,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                Text(
-                                  'Coming soon',
-                                  style: TextStyle(
-                                      color: colors.colorSecondaryText,
-                                      fontSize: 12),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: colors.colorGray.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              'Soon',
-                              style: TextStyle(
-                                color: colors.colorGray,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // ── Yearly stats ────────────────────────────────────
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: colors.colorWhite,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: colors.colorDivider),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.bar_chart,
-                                  color: colors.colorPrimary, size: 18),
-                              const SizedBox(width: 6),
-                              Text(
-                                '${DateTime.now().year} Overview',
-                                style: TextStyle(
-                                  color: colors.colorPrimaryText,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-                          Row(
-                            children: [
-                              _YearStatItem(
-                                label: 'Collected',
-                                value:
-                                    '${stats.totalCollectedYear.toStringAsFixed(0)} MMK',
-                                color: Colors.green,
-                              ),
-                              _YearStatItem(
-                                label: 'Monthly Avg',
-                                value:
-                                    '${stats.monthlyAverage.toStringAsFixed(0)} MMK',
-                                color: colors.colorPrimary,
-                              ),
-                              _YearStatItem(
-                                label: 'Collection Rate',
-                                value:
-                                    '${(stats.collectionRate * 100).toStringAsFixed(1)}%',
-                                color: stats.collectionRate >= 0.8
-                                    ? Colors.green
-                                    : colors.colorRedBox,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // ── Month filter ────────────────────────────────────
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: colors.colorSecondary,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.calendar_month,
-                                  color: colors.colorPrimary, size: 18),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: DropdownButtonHideUnderline(
-                                  child: DropdownButton<DateTime>(
-                                    value: paymentState.selectedMonth,
-                                    isDense: true,
-                                    style: TextStyle(
-                                      color: colors.colorPrimaryText,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
-                                    ),
-                                    dropdownColor: colors.colorWhite,
-                                    borderRadius: BorderRadius.circular(12),
-                                    items: paymentState.availableMonths
-                                        .map((month) => DropdownMenuItem(
-                                              value: month,
-                                              child: Text(
-                                                  _formatMonth(month)),
-                                            ))
-                                        .toList(),
-                                    onChanged: paymentState.isCheckLoading
-                                        ? null
-                                        : (month) {
-                                            if (month != null) {
-                                              ref
-                                                  .read(paymentProvider
-                                                      .notifier)
-                                                  .selectMonth(month);
-                                            }
-                                          },
-                                  ),
-                                ),
-                              ),
-                              if (paymentState.isCheckLoading)
-                                SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: colors.colorPrimary,
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              _SummaryChip(
-                                label: 'Paid',
-                                value: '$paidCount/${activeStudents.length}',
-                                color: Colors.green,
-                              ),
-                              const SizedBox(width: 8),
-                              _SummaryChip(
-                                label: 'Collected',
-                                value:
-                                    '${totalCollected.toStringAsFixed(0)} MMK',
-                                color: colors.colorPrimary,
-                              ),
-                              const SizedBox(width: 8),
-                              _SummaryChip(
-                                label: 'Pending',
-                                value:
-                                    '${(totalExpected - totalCollected).toStringAsFixed(0)} MMK',
-                                color: colors.colorRedBox,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // ── Student checklist ───────────────────────────────
-                    if (students.isEmpty)
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(32),
-                          child: Text('No students found.',
-                              style: TextStyle(color: colors.colorHint)),
                         ),
-                      )
-                    else
-                      ...students.map((student) => Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: _ChecklistCard(student: student),
-                          )),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        _YearStatItem(
+                          label: 'Collected',
+                          value: _mmk(stats.totalCollectedYear),
+                          color: Colors.green,
+                        ),
+                        _YearStatItem(
+                          label: 'Monthly Avg',
+                          value: _mmk(stats.monthlyAverage),
+                          color: colors.colorPrimary,
+                        ),
+                        _YearStatItem(
+                          label: 'Rate',
+                          value:
+                              '${(stats.collectionRate * 100).toStringAsFixed(1)}%',
+                          color: stats.collectionRate >= 0.8
+                              ? Colors.green
+                              : colors.colorRedBox,
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
+
+              const SizedBox(height: 12),
+
+              // ── Month dropdown ────────────────────────────────────────
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: colors.colorSecondary,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.calendar_month,
+                            color: colors.colorPrimary, size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<DateTime>(
+                              value: paymentState.selectedMonth,
+                              isDense: true,
+                              style: TextStyle(
+                                color: colors.colorPrimaryText,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
+                              dropdownColor: colors.colorWhite,
+                              borderRadius: BorderRadius.circular(12),
+                              items: paymentState.availableMonths
+                                  .map((month) => DropdownMenuItem(
+                                        value: month,
+                                        child:
+                                            Text(_formatMonth(month)),
+                                      ))
+                                  .toList(),
+                              onChanged: paymentState.isCheckLoading
+                                  ? null
+                                  : (month) {
+                                      if (month != null) {
+                                        ref
+                                            .read(
+                                                paymentProvider.notifier)
+                                            .selectMonth(month);
+                                      }
+                                    },
+                            ),
+                          ),
+                        ),
+                        if (paymentState.isCheckLoading)
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: colors.colorPrimary,
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        _SummaryChip(
+                          label: 'Paid',
+                          value: '$paidCount/${activeStudents.length}',
+                          color: Colors.green,
+                        ),
+                        const SizedBox(width: 8),
+                        _SummaryChip(
+                          label: 'Collected',
+                          value: _mmk(totalCollected),
+                          color: colors.colorPrimary,
+                        ),
+                        const SizedBox(width: 8),
+                        _SummaryChip(
+                          label: 'Pending',
+                          value: _mmk(totalExpected - totalCollected),
+                          color: colors.colorRedBox,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // ── Student checklist (Unpaid → Paid → Excluded) ──────────
+              if (students.isEmpty)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Text('No students found.',
+                        style: TextStyle(color: colors.colorHint)),
+                  ),
+                )
+              else
+                ...students.map((student) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _ChecklistCard(student: student),
+                    )),
             ],
           );
         },
@@ -291,11 +233,10 @@ class PaymentCheckScreen extends ConsumerWidget {
   }
 }
 
-// ── Checklist card with exclude bottom sheet ──────────────────────────────────
+// ── Checklist card ─────────────────────────────────────────────────────────────
 
 class _ChecklistCard extends ConsumerWidget {
   final StudentEntity student;
-
   const _ChecklistCard({required this.student});
 
   void _showManageSheet(BuildContext context, WidgetRef ref) {
@@ -307,13 +248,11 @@ class _ChecklistCard extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => Container(
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(20))),
+      backgroundColor: colors.colorWhite,
+      builder: (ctx) => Padding(
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-        decoration: BoxDecoration(
-          color: colors.colorNavBarBg,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))
-        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -329,19 +268,14 @@ class _ChecklistCard extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            Text(
-              student.name,
-              style: TextStyle(
-                color: colors.colorPrimaryText,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-            Text(
-              'Grade: ${student.grade}',
-              style: TextStyle(
-                  color: colors.colorSecondaryText, fontSize: 13),
-            ),
+            Text(student.name,
+                style: TextStyle(
+                    color: colors.colorPrimaryText,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16)),
+            Text('Grade: ${student.grade}',
+                style: TextStyle(
+                    color: colors.colorSecondaryText, fontSize: 13)),
             const SizedBox(height: 20),
             ListTile(
               contentPadding: EdgeInsets.zero,
@@ -357,13 +291,14 @@ class _ChecklistCard extends ConsumerWidget {
                   isExcluded
                       ? Icons.person_add_outlined
                       : Icons.person_remove_outlined,
-                  color: isExcluded ? Colors.green : colors.colorRedBox,
+                  color:
+                      isExcluded ? Colors.green : colors.colorRedBox,
                 ),
               ),
               title: Text(
                 isExcluded
-                    ? 'Include this student'
-                    : 'Exclude this student',
+                    ? 'Include this student this month'
+                    : 'Exclude this student this month',
                 style: TextStyle(
                   color: isExcluded ? Colors.green : colors.colorRedBox,
                   fontWeight: FontWeight.w600,
@@ -371,8 +306,8 @@ class _ChecklistCard extends ConsumerWidget {
               ),
               subtitle: Text(
                 isExcluded
-                    ? 'Student will be added back to this month\'s payment list'
-                    : 'Student won\'t count towards this month\'s total',
+                    ? 'Add back to this month\'s payment list'
+                    : 'Won\'t count towards this month\'s total',
                 style: TextStyle(
                     color: colors.colorSecondaryText, fontSize: 12),
               ),
@@ -396,7 +331,8 @@ class _ChecklistCard extends ConsumerWidget {
     final colors = context.appColors;
     final isExcluded = student.isExcludedThisMonth;
     final hasPayment = student.payments.isNotEmpty;
-    final isPaid = hasPayment && student.payments.first.isPaid && !isExcluded;
+    final isPaid =
+        hasPayment && student.payments.first.isPaid && !isExcluded;
     final paymentId = hasPayment ? student.payments.first.id : null;
 
     return Container(
@@ -437,7 +373,8 @@ class _ChecklistCard extends ConsumerWidget {
         title: Text(
           student.name,
           style: TextStyle(
-            color: isExcluded ? colors.colorGray : colors.colorPrimaryText,
+            color:
+                isExcluded ? colors.colorGray : colors.colorPrimaryText,
             fontWeight: FontWeight.w600,
             decoration:
                 isExcluded ? TextDecoration.lineThrough : null,
@@ -446,14 +383,13 @@ class _ChecklistCard extends ConsumerWidget {
         subtitle: Text(
           isExcluded
               ? 'Excluded this month'
-              : 'Grade: ${student.grade}  •  ${student.monthlyFee.toStringAsFixed(0)} MMK',
-          style: TextStyle(
-              color: colors.colorSecondaryText, fontSize: 12),
+              : 'Grade: ${student.grade}  •  ${_mmk(student.monthlyFee)}',
+          style:
+              TextStyle(color: colors.colorSecondaryText, fontSize: 12),
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Manage button (⋮)
             GestureDetector(
               onTap: () => _showManageSheet(context, ref),
               child: Padding(
@@ -463,7 +399,6 @@ class _ChecklistCard extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 4),
-            // Toggle
             if (!isExcluded && paymentId != null)
               GestureDetector(
                 onTap: () => ref
@@ -485,8 +420,7 @@ class _ChecklistCard extends ConsumerWidget {
                     child: Container(
                       width: 24,
                       height: 24,
-                      margin:
-                          const EdgeInsets.symmetric(horizontal: 3),
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
                       decoration: const BoxDecoration(
                         color: Colors.white,
                         shape: BoxShape.circle,
@@ -505,13 +439,10 @@ class _ChecklistCard extends ConsumerWidget {
   }
 }
 
-// ── Small reusable widgets ────────────────────────────────────────────────────
-
 class _SummaryChip extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
-
   const _SummaryChip(
       {required this.label, required this.value, required this.color});
 
@@ -519,7 +450,8 @@ class _SummaryChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+        padding:
+            const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
         decoration: BoxDecoration(
           color: color.withOpacity(0.08),
           borderRadius: BorderRadius.circular(10),
@@ -535,7 +467,7 @@ class _SummaryChip extends StatelessWidget {
                 style: TextStyle(
                     color: color,
                     fontWeight: FontWeight.bold,
-                    fontSize: 12)),
+                    fontSize: 11)),
           ],
         ),
       ),
@@ -547,7 +479,6 @@ class _YearStatItem extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
-
   const _YearStatItem(
       {required this.label, required this.value, required this.color});
 
@@ -566,7 +497,7 @@ class _YearStatItem extends StatelessWidget {
               style: TextStyle(
                   color: color,
                   fontWeight: FontWeight.bold,
-                  fontSize: 13)),
+                  fontSize: 12)),
         ],
       ),
     );

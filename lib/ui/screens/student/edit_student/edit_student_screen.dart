@@ -98,7 +98,6 @@ class _EditStudentScreenState extends ConsumerState<EditStudentScreen> {
         ),
         backgroundColor: colors.colorNavBarBg,
         elevation: 0,
-        iconTheme: IconThemeData(color: colors.colorPrimary),
         actions: [
           IconButton(
             icon: const Icon(Icons.delete_outline, color: Colors.red),

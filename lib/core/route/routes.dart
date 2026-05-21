@@ -3,6 +3,9 @@ import 'package:my_teacher_wallet/domain/entities/student_entity.dart';
 import 'package:my_teacher_wallet/ui/screens/home/home_screen.dart';
 import 'package:my_teacher_wallet/ui/screens/main_screen.dart';
 import 'package:my_teacher_wallet/ui/screens/payment_check/payment_check_screen.dart';
+import 'package:my_teacher_wallet/ui/screens/payment_check/report_screen.dart';
+import 'package:my_teacher_wallet/ui/screens/settings/about_screen.dart';
+import 'package:my_teacher_wallet/ui/screens/settings/app_info_screen.dart';
 import 'package:my_teacher_wallet/ui/screens/settings/settings_screen.dart';
 import 'package:my_teacher_wallet/ui/screens/student/add_student/add_student_screen.dart';
 import 'package:my_teacher_wallet/ui/screens/student/edit_student/edit_student_screen.dart';
@@ -16,7 +19,10 @@ enum Routes {
   settings("settings", "/settings"),
   addStudents("addStudents", "addStudents"),
   studentDetail("studentDetail", "studentDetail"),
-  editStudent("editStudent", "editStudent");
+  editStudent("editStudent", "editStudent"),
+  reports("reports", "/reports"),
+  about("about", "/about"),
+  appInfo("appInfo", "/appInfo");
 
   const Routes(this.name, this.path);
   final String name;
@@ -79,6 +85,13 @@ final GoRouter goRouter = GoRouter(
               path: Routes.payment.path,
               name: Routes.payment.name,
               builder: (context, state) => const PaymentCheckScreen(),
+              routes: [
+                GoRoute(
+                  path: Routes.reports.path,
+                  name: Routes.reports.name,
+                  builder: (context, state) => const ReportScreen(),
+                ),
+              ]
             ),
           ],
         ),
@@ -88,6 +101,18 @@ final GoRouter goRouter = GoRouter(
               path: Routes.settings.path,
               name: Routes.settings.name,
               builder: (context, state) => const SettingsScreen(),
+              routes: [
+                GoRoute(
+                  path: Routes.about.path,
+                  name: Routes.about.name,
+                  builder: (context, state) => const AboutScreen(),
+                ),
+                GoRoute(
+                  path: Routes.appInfo.path,
+                  name: Routes.appInfo.name,
+                  builder: (context, state) => const AppInfoScreen(),
+                ),
+              ]
             ),
           ],
         ),

@@ -4,6 +4,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:my_teacher_wallet/core/app_colors.dart';
 import 'package:my_teacher_wallet/core/route/routes.dart';
+import 'package:my_teacher_wallet/core/services/app_config_service.dart';
 import 'package:my_teacher_wallet/domain/entities/student_entity.dart';
 import 'package:my_teacher_wallet/ui/screens/payment_check/providers/payment_notifier_provider.dart';
 import 'package:my_teacher_wallet/ui/screens/student/providers/student_provider.dart';
@@ -18,6 +19,25 @@ class StudentsScreen extends ConsumerStatefulWidget {
 class _StudentsScreenState extends ConsumerState<StudentsScreen> {
   final _searchController = TextEditingController();
   String _query = '';
+  bool _showSwipeHint = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkSwipeHint();
+  }
+
+  Future<void> _checkSwipeHint() async {
+    final seen = await AppConfigService.hasSeenSwipeHint();
+    if (!seen && mounted) {
+      setState(() => _showSwipeHint = true);
+    }
+  }
+
+  Future<void> _dismissSwipeHint() async {
+    await AppConfigService.markSwipeHintSeen();
+    if (mounted) setState(() => _showSwipeHint = false);
+  }
 
   @override
   void dispose() {
@@ -61,7 +81,7 @@ class _StudentsScreenState extends ConsumerState<StudentsScreen> {
   }
 
   @override
-  Widget build(BuildContext context, ) {
+  Widget build(BuildContext context) {
     final colors = context.appColors;
     final stateAsync = ref.watch(paymentProvider);
 
@@ -78,6 +98,40 @@ class _StudentsScreenState extends ConsumerState<StudentsScreen> {
       ),
       body: Column(
         children: [
+          // ── Swipe hint banner ──────────────────────────────────────────
+          if (_showSwipeHint)
+            Container(
+              margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: colors.colorPrimary.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(12),
+                border:
+                    Border.all(color: colors.colorPrimary.withOpacity(0.2)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.swipe, color: colors.colorPrimary, size: 18),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Swipe right to edit  •  Swipe left to delete',
+                      style: TextStyle(
+                          color: colors.colorPrimary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: _dismissSwipeHint,
+                    child: Icon(Icons.close,
+                        color: colors.colorPrimary, size: 16),
+                  ),
+                ],
+              ),
+            ),
+
           // ── Search bar ─────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -88,8 +142,7 @@ class _StudentsScreenState extends ConsumerState<StudentsScreen> {
               decoration: InputDecoration(
                 hintText: 'Search by name or grade...',
                 hintStyle: TextStyle(color: colors.colorHint),
-                prefixIcon:
-                    Icon(Icons.search, color: colors.colorHint),
+                prefixIcon: Icon(Icons.search, color: colors.colorHint),
                 suffixIcon: _query.isNotEmpty
                     ? IconButton(
                         icon: Icon(Icons.clear, color: colors.colorHint),
@@ -115,45 +168,76 @@ class _StudentsScreenState extends ConsumerState<StudentsScreen> {
             ),
           ),
 
-          // ── List ───────────────────────────────────────────────────────
+          // ── Student count + list ───────────────────────────────────────
           Expanded(
             child: stateAsync.when(
               loading: () =>
                   const Center(child: CircularProgressIndicator()),
               error: (err, _) => Center(child: Text('Error: $err')),
               data: (paymentState) {
-                final students =
-                    _filtered(paymentState.currentMonthStudents);
+                final allStudents = paymentState.currentMonthStudents;
+                final students = _filtered(allStudents);
 
-                if (students.isEmpty) {
-                  return _buildEmptyState(colors);
-                }
-
-                return ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  itemCount: students.length,
-                  separatorBuilder: (_, __) =>
-                      const SizedBox(height: 10),
-                  itemBuilder: (context, index) {
-                    final student = students[index];
-                    return _SwipeStudentCard(
-                      student: student,
-                      onEdit: () => context.pushNamed(
-                        Routes.studentDetail.name,
-                        extra: student,
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Student count
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                      child: Row(
+                        children: [
+                          Text(
+                            _query.isNotEmpty
+                                ? '${students.length} of ${allStudents.length} students'
+                                : '${allStudents.length} student${allStudents.length == 1 ? '' : 's'}',
+                            style: TextStyle(
+                              color: colors.colorSecondaryText,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
-                      onDelete: () async {
-                        final confirm = await _confirmDelete(
-                            context, student.name);
-                        if (confirm && student.id != null) {
-                          await ref
-                              .read(studentProvider.notifier)
-                              .removeStudent(student.id!);
-                          ref.read(paymentProvider.notifier).refresh();
-                        }
-                      },
-                    );
-                  },
+                    ),
+
+                    Expanded(
+                      child: students.isEmpty
+                          ? _buildEmptyState(colors)
+                          : ListView.separated(
+                              padding:
+                                  const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                              itemCount: students.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 10),
+                              itemBuilder: (context, index) {
+                                final student = students[index];
+                                return _SwipeStudentCard(
+                                  student: student,
+                                  onTap: () => context.pushNamed(
+                                    Routes.studentDetail.name,
+                                    extra: student,
+                                  ),
+                                  onEdit: () => context.pushNamed(
+                                    Routes.editStudent.name,
+                                    extra: student,
+                                  ),
+                                  onDelete: () async {
+                                    final confirm = await _confirmDelete(
+                                        context, student.name);
+                                    if (confirm && student.id != null) {
+                                      await ref
+                                          .read(studentProvider.notifier)
+                                          .removeStudent(student.id!);
+                                      ref
+                                          .read(paymentProvider.notifier)
+                                          .refresh();
+                                    }
+                                  },
+                                );
+                              },
+                            ),
+                    ),
+                  ],
                 );
               },
             ),
@@ -189,10 +273,8 @@ class _StudentsScreenState extends ConsumerState<StudentsScreen> {
           ),
           if (_query.isEmpty) ...[
             const SizedBox(height: 8),
-            Text(
-              'Tap + to add your first student',
-              style: TextStyle(color: colors.colorHint, fontSize: 13),
-            ),
+            Text('Tap + to add your first student',
+                style: TextStyle(color: colors.colorHint, fontSize: 13)),
           ],
         ],
       ),
@@ -204,13 +286,14 @@ class _StudentsScreenState extends ConsumerState<StudentsScreen> {
 
 class _SwipeStudentCard extends StatelessWidget {
   final StudentEntity student;
+  final VoidCallback onTap;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   const _SwipeStudentCard({
     required this.student,
     required this.onEdit,
-    required this.onDelete,
+    required this.onDelete, required this.onTap,
   });
 
   @override
@@ -222,14 +305,12 @@ class _SwipeStudentCard extends StatelessWidget {
 
     return Dismissible(
       key: ValueKey(student.id),
-      // Swipe right → edit (blue background)
       background: _SwipeBg(
         color: colors.colorPrimary,
         icon: Icons.edit_outlined,
         alignment: Alignment.centerLeft,
         label: 'Edit',
       ),
-      // Swipe left → delete (red background)
       secondaryBackground: _SwipeBg(
         color: colors.colorRedBox,
         icon: Icons.delete_outline,
@@ -238,11 +319,9 @@ class _SwipeStudentCard extends StatelessWidget {
       ),
       confirmDismiss: (direction) async {
         if (direction == DismissDirection.startToEnd) {
-          // Swipe right → edit; don't dismiss, just navigate
           onEdit();
           return false;
         } else {
-          // Swipe left → delete
           onDelete();
           return false;
         }
@@ -268,7 +347,7 @@ class _SwipeStudentCard extends StatelessWidget {
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: onEdit,
+          onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.symmetric(
                 horizontal: 16, vertical: 12),
@@ -316,7 +395,7 @@ class _SwipeStudentCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${student.monthlyFee.toStringAsFixed(0)} MMK / month',
+                        '${_formatMMK(student.monthlyFee)} / month',
                         style: TextStyle(
                           color: isExcluded
                               ? colors.colorGray
@@ -336,6 +415,14 @@ class _SwipeStudentCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _formatMMK(double value) {
+    final formatted = value.toInt().toString().replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (m) => '${m[1]},',
+        );
+    return '$formatted MMK';
   }
 }
 

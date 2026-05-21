@@ -9,7 +9,6 @@ import 'package:my_teacher_wallet/core/route/routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:my_teacher_wallet/ui/screens/payment_check/providers/payment_notifier_provider.dart';
 
-// Provider that loads full payment history for one student
 final studentHistoryProvider =
     FutureProvider.family<List<PaymentRecordEntity>, int>(
         (ref, studentId) async {

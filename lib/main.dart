@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_teacher_wallet/core/app_colors.dart';
 import 'package:my_teacher_wallet/core/services/isar_service.dart';
 import 'package:my_teacher_wallet/core/route/routes.dart';
+import 'package:my_teacher_wallet/core/theme/theme_provider.dart';
 import 'package:my_teacher_wallet/data/database_provider.dart';
 
 Future<void> main () async {
@@ -20,16 +21,29 @@ Future<void> main () async {
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeModeProvider);
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       routerConfig: goRouter,
+      themeMode: themeMode,
       theme: ThemeData(
-        scaffoldBackgroundColor: context.appColors.colorNavBarBg
+        brightness: Brightness.light,
+        colorSchemeSeed: const Color(0xFF1672EC),
+        useMaterial3: true,
+        fontFamily: 'Poppins',
+      ),
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        colorSchemeSeed: const Color(0xFF1672EC),
+        useMaterial3: true,
+        fontFamily: 'Poppins',
+        scaffoldBackgroundColor: const Color(0xFF0F172A),
+        cardColor: const Color(0xFF1E293B),
       ),
     );
   }
