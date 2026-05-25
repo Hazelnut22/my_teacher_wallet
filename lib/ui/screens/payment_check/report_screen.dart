@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_teacher_wallet/core/app_colors.dart';
+import 'package:my_teacher_wallet/core/app_fonts.dart';
 import 'package:my_teacher_wallet/ui/screens/payment_check/providers/payment_notifier_provider.dart';
 
 String _mmk(double value) {
@@ -22,6 +23,7 @@ class ReportScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.appColors;
+    final fonts = context.appFonts;
     final stateAsync = ref.watch(paymentProvider);
 
     return Scaffold(
@@ -29,8 +31,8 @@ class ReportScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(
           'Yearly Report',
-          style: TextStyle(
-              color: colors.colorPrimaryText, fontWeight: FontWeight.bold),
+          style: fonts.appBarTitle()
+              ?.copyWith(color: colors.colorPrimaryText),
         ),
         backgroundColor: colors.colorNavBarBg,
         foregroundColor: colors.colorPrimaryText,
@@ -50,12 +52,12 @@ class ReportScreen extends ConsumerWidget {
                       size: 64, color: colors.colorHint),
                   const SizedBox(height: 16),
                   Text('No data for ${report.year} yet.',
-                      style: TextStyle(
-                          color: colors.colorPrimaryText, fontSize: 16)),
+                      style: fonts.headlineSmall()
+                        ?.copyWith(color: colors.colorPrimaryText),),
                   const SizedBox(height: 8),
                   Text('Start adding students and tracking payments.',
-                      style: TextStyle(
-                          color: colors.colorHint, fontSize: 13)),
+                      style: fonts.bodySmall()
+                        ?.copyWith(color: colors.colorHint),),
                 ],
               ),
             );
@@ -84,15 +86,15 @@ class ReportScreen extends ConsumerWidget {
                   children: [
                     Text(
                       '${report.year} Summary',
-                      style: TextStyle(
-                          color: Colors.white.withOpacity(0.85),
-                          fontSize: 13),
+                      style: fonts.bodySmall()?.copyWith(
+                        color: colors.colorWhite.withOpacity(0.85),
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       _mmk(report.totalCollected),
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: fonts.headlineLarge()?.copyWith(
+                        color: colors.colorWhite,
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
                       ),
@@ -100,9 +102,9 @@ class ReportScreen extends ConsumerWidget {
                     const SizedBox(height: 4),
                     Text(
                       'of ${_mmk(report.totalExpected)} expected',
-                      style: TextStyle(
-                          color: Colors.white.withOpacity(0.75),
-                          fontSize: 13),
+                      style: fonts.bodySmall()?.copyWith(
+                        color: colors.colorWhite.withOpacity(0.75),
+                      ),
                     ),
                     const SizedBox(height: 16),
                     ClipRRect(
@@ -121,16 +123,16 @@ class ReportScreen extends ConsumerWidget {
                       children: [
                         Text(
                           '${report.totalStudents} student${report.totalStudents == 1 ? '' : 's'}',
-                          style: TextStyle(
-                              color: Colors.white.withOpacity(0.85),
-                              fontSize: 12),
+                          style: fonts.bodySmall()?.copyWith(
+                            color: colors.colorWhite.withOpacity(0.85),
+                          ),
                         ),
                         Text(
                           '${(report.collectionRate * 100).toStringAsFixed(1)}% collected',
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold),
+                          style: fonts.bodySmall()?.copyWith(
+                            color: colors.colorWhite,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ],
                     ),
@@ -141,7 +143,7 @@ class ReportScreen extends ConsumerWidget {
               const SizedBox(height: 16),
 
               // ── Highlights ─────────────────────────────────────────────
-              _SectionTitle(title: 'Highlights', colors: colors),
+              _SectionTitle(title: 'Highlights'),
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -154,8 +156,7 @@ class ReportScreen extends ConsumerWidget {
                         sub:
                             '${(report.bestMonth!.collectionRate * 100).toStringAsFixed(0)}% collected',
                         icon: Icons.trending_up,
-                        color: Colors.green,
-                        colors: colors,
+                        color: colors.colorSuccess,
                       ),
                     ),
                   if (report.bestMonth != null &&
@@ -172,7 +173,6 @@ class ReportScreen extends ConsumerWidget {
                             '${(report.worstMonth!.collectionRate * 100).toStringAsFixed(0)}% collected',
                         icon: Icons.trending_down,
                         color: colors.colorRedBox,
-                        colors: colors,
                       ),
                     ),
                 ],
@@ -186,7 +186,6 @@ class ReportScreen extends ConsumerWidget {
                       '${report.mostConsistentStudent!.monthsPaid} months paid  •  ${(report.mostConsistentStudent!.attendanceRate * 100).toStringAsFixed(0)}% rate',
                   icon: Icons.star_outline,
                   color: Colors.amber.shade700,
-                  colors: colors,
                   fullWidth: true,
                 ),
               ],
@@ -194,7 +193,7 @@ class ReportScreen extends ConsumerWidget {
               const SizedBox(height: 20),
 
               // ── Monthly trend ──────────────────────────────────────────
-              _SectionTitle(title: 'Monthly Trend', colors: colors),
+              _SectionTitle(title: 'Monthly Trend'),
               const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.all(16),
@@ -219,10 +218,10 @@ class ReportScreen extends ConsumerWidget {
                             width: 32,
                             child: Text(
                               _monthNames[entry.month.month - 1],
-                              style: TextStyle(
-                                  color: colors.colorSecondaryText,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500),
+                              style: fonts.bodySmall()?.copyWith(
+                                color: colors.colorSecondaryText,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -246,9 +245,10 @@ class ReportScreen extends ConsumerWidget {
                                 Text(
                                   '${entry.paidCount} paid  •  ${entry.unpaidCount} unpaid'
                                   '${entry.excludedCount > 0 ? '  •  ${entry.excludedCount} excluded' : ''}',
-                                  style: TextStyle(
-                                      color: colors.colorSecondaryText,
-                                      fontSize: 10),
+                                  style: fonts.bodySmall()?.copyWith(
+                                    color: colors.colorSecondaryText,
+                                    fontSize: 10,
+                                  ),
                                 ),
                               ],
                             ),
@@ -259,10 +259,10 @@ class ReportScreen extends ConsumerWidget {
                             child: Text(
                               '${(rate * 100).toStringAsFixed(0)}%',
                               textAlign: TextAlign.right,
-                              style: TextStyle(
-                                  color: barColor,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12),
+                              style: fonts.bodySmall()?.copyWith(
+                                color: barColor,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ],
@@ -276,12 +276,12 @@ class ReportScreen extends ConsumerWidget {
 
               // ── Per-student breakdown ──────────────────────────────────
               _SectionTitle(
-                  title: 'Student Breakdown', colors: colors),
+                  title: 'Student Breakdown'),
               const SizedBox(height: 8),
               ...report.studentBreakdown.map((entry) {
                 final rate = entry.attendanceRate;
                 final rateColor = rate >= 0.8
-                    ? Colors.green
+                    ? colors.colorSuccess
                     : rate >= 0.5
                         ? colors.colorPrimary
                         : colors.colorRedBox;
@@ -304,10 +304,10 @@ class ReportScreen extends ConsumerWidget {
                                 rateColor.withOpacity(0.1),
                             child: Text(
                               entry.name[0].toUpperCase(),
-                              style: TextStyle(
-                                  color: rateColor,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13),
+                              style: fonts.bodySmall()?.copyWith(
+                                color: rateColor,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -317,22 +317,24 @@ class ReportScreen extends ConsumerWidget {
                                   CrossAxisAlignment.start,
                               children: [
                                 Text(entry.name,
-                                    style: TextStyle(
-                                        color: colors.colorPrimaryText,
-                                        fontWeight: FontWeight.bold)),
+                                    style: fonts.titleLarge()?.copyWith(
+                                    color: colors.colorPrimaryText,
+                                    fontWeight: FontWeight.bold,
+                                  ),),
                                 Text('Grade: ${entry.grade}',
-                                    style: TextStyle(
-                                        color: colors.colorSecondaryText,
-                                        fontSize: 12)),
+                                    style: fonts.bodySmall()?.copyWith(
+                                    color: colors.colorSecondaryText,
+                                  ),),
                               ],
                             ),
                           ),
                           Text(
                             _mmk(entry.totalPaid),
-                            style: TextStyle(
-                                color: rateColor,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13),
+                            style: fonts.bodySmall()?.copyWith(
+                              color: rateColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
                           ),
                         ],
                       ),
@@ -342,7 +344,7 @@ class ReportScreen extends ConsumerWidget {
                           _MiniStat(
                               label: 'Paid',
                               value: '${entry.monthsPaid}mo',
-                              color: Colors.green),
+                              color: colors.colorSuccess),
                           _MiniStat(
                               label: 'Unpaid',
                               value: '${entry.monthsUnpaid}mo',
@@ -358,10 +360,10 @@ class ReportScreen extends ConsumerWidget {
                               children: [
                                 Text(
                                   '${(rate * 100).toStringAsFixed(0)}% rate',
-                                  style: TextStyle(
-                                      color: rateColor,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12),
+                                  style: fonts.bodySmall()?.copyWith(
+                                    color: rateColor,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ],
                             ),
@@ -395,16 +397,15 @@ class ReportScreen extends ConsumerWidget {
 
 class _SectionTitle extends StatelessWidget {
   final String title;
-  final AppColors colors;
-  const _SectionTitle({required this.title, required this.colors});
+  const _SectionTitle({required this.title});
 
   @override
   Widget build(BuildContext context) {
     return Text(title,
-        style: TextStyle(
-            color: colors.colorPrimaryText,
+        style: context.appFonts.headlineSmall()?.copyWith(
+            color: context.appColors.colorPrimaryText,
             fontWeight: FontWeight.bold,
-            fontSize: 15));
+          ),);
   }
 }
 
@@ -414,7 +415,6 @@ class _HighlightCard extends StatelessWidget {
   final String sub;
   final IconData icon;
   final Color color;
-  final AppColors colors;
   final bool fullWidth;
 
   const _HighlightCard({
@@ -423,7 +423,6 @@ class _HighlightCard extends StatelessWidget {
     required this.sub,
     required this.icon,
     required this.color,
-    required this.colors,
     this.fullWidth = false,
   });
 
@@ -446,16 +445,20 @@ class _HighlightCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(label,
-                    style: TextStyle(
-                        color: color.withOpacity(0.8), fontSize: 11)),
+                    style: context.appFonts.bodySmall()?.copyWith(
+                    color: color.withOpacity(0.8),
+                    fontSize: 11,
+                  ),),
                 Text(value,
-                    style: TextStyle(
-                        color: color,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14)),
+                    style: context.appFonts.titleLarge()?.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                  ),),
                 Text(sub,
-                    style: TextStyle(
-                        color: colors.colorSecondaryText, fontSize: 11)),
+                    style: context.appFonts.bodySmall()?.copyWith(
+                    color: context.appColors.colorSecondaryText,
+                    fontSize: 11,
+                  ),),
               ],
             ),
           ),
@@ -480,13 +483,14 @@ class _MiniStat extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label,
-              style: TextStyle(
-                  color: color.withOpacity(0.8), fontSize: 10)),
+              style: context.appFonts.bodySmall()
+                ?.copyWith(color: color.withOpacity(0.8), fontSize: 10),),
           Text(value,
-              style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12)),
+              style: context.appFonts.bodySmall()?.copyWith(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),),
         ],
       ),
     );

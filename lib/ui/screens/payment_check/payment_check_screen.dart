@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:my_teacher_wallet/core/app_colors.dart';
+import 'package:my_teacher_wallet/core/app_fonts.dart';
 import 'package:my_teacher_wallet/core/route/routes.dart';
 import 'package:my_teacher_wallet/domain/entities/student_entity.dart';
 import 'package:my_teacher_wallet/ui/screens/payment_check/providers/payment_notifier_provider.dart';
@@ -28,6 +29,7 @@ class PaymentCheckScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.appColors;
+    final fonts = context.appFonts;
     final stateAsync = ref.watch(paymentProvider);
 
     return Scaffold(
@@ -35,8 +37,8 @@ class PaymentCheckScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(
           'Payment Check',
-          style: TextStyle(
-              color: colors.colorPrimaryText, fontWeight: FontWeight.bold),
+          style: fonts.appBarTitle()
+              ?.copyWith(color: colors.colorPrimaryText),
         ),
         backgroundColor: colors.colorNavBarBg,
         elevation: 0,
@@ -89,10 +91,9 @@ class PaymentCheckScreen extends ConsumerWidget {
                         const SizedBox(width: 6),
                         Text(
                           '${DateTime.now().year} Overview',
-                          style: TextStyle(
+                          style: fonts.titleLarge()?.copyWith(
                             color: colors.colorPrimaryText,
                             fontWeight: FontWeight.bold,
-                            fontSize: 14,
                           ),
                         ),
                       ],
@@ -145,10 +146,9 @@ class PaymentCheckScreen extends ConsumerWidget {
                             child: DropdownButton<DateTime>(
                               value: paymentState.selectedMonth,
                               isDense: true,
-                              style: TextStyle(
+                              style: fonts.titleLarge()?.copyWith(
                                 color: colors.colorPrimaryText,
                                 fontWeight: FontWeight.bold,
-                                fontSize: 15,
                               ),
                               dropdownColor: colors.colorWhite,
                               borderRadius: BorderRadius.circular(12),
@@ -156,7 +156,12 @@ class PaymentCheckScreen extends ConsumerWidget {
                                   .map((month) => DropdownMenuItem(
                                         value: month,
                                         child:
-                                            Text(_formatMonth(month)),
+                                            Text(
+                                              _formatMonth(month),
+                                              style:
+                                              fonts.titleLarge()?.copyWith(
+                                            color: colors.colorPrimaryText,
+                                          ),),
                                       ))
                                   .toList(),
                               onChanged: paymentState.isCheckLoading
@@ -189,7 +194,7 @@ class PaymentCheckScreen extends ConsumerWidget {
                         _SummaryChip(
                           label: 'Paid',
                           value: '$paidCount/${activeStudents.length}',
-                          color: Colors.green,
+                          color: colors.colorSuccess,
                         ),
                         const SizedBox(width: 8),
                         _SummaryChip(
@@ -217,7 +222,8 @@ class PaymentCheckScreen extends ConsumerWidget {
                   child: Padding(
                     padding: const EdgeInsets.all(32),
                     child: Text('No students found.',
-                        style: TextStyle(color: colors.colorHint)),
+                        style: fonts.bodyMedium()
+                          ?.copyWith(color: colors.colorHint),)
                   ),
                 )
               else
@@ -244,6 +250,8 @@ class _ChecklistCard extends ConsumerWidget {
     final isExcluded = student.isExcludedThisMonth;
     final paymentId =
         student.payments.isNotEmpty ? student.payments.first.id : null;
+    final actionColor =
+        isExcluded ? colors.colorSuccess : colors.colorRedBox;
 
     showModalBottomSheet(
       context: context,
@@ -269,22 +277,20 @@ class _ChecklistCard extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             Text(student.name,
-                style: TextStyle(
-                    color: colors.colorPrimaryText,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16)),
+                style: context.appFonts.headlineSmall()?.copyWith(
+                color: colors.colorPrimaryText,
+                fontWeight: FontWeight.bold,
+              ),),
             Text('Grade: ${student.grade}',
-                style: TextStyle(
-                    color: colors.colorSecondaryText, fontSize: 13)),
+                style: context.appFonts.bodySmall()
+                  ?.copyWith(color: colors.colorSecondaryText),),
             const SizedBox(height: 20),
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: isExcluded
-                      ? Colors.green.withOpacity(0.1)
-                      : colors.colorRedBox.withOpacity(0.1),
+                  color: actionColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
@@ -292,15 +298,15 @@ class _ChecklistCard extends ConsumerWidget {
                       ? Icons.person_add_outlined
                       : Icons.person_remove_outlined,
                   color:
-                      isExcluded ? Colors.green : colors.colorRedBox,
+                      actionColor,
                 ),
               ),
               title: Text(
                 isExcluded
                     ? 'Include this student this month'
                     : 'Exclude this student this month',
-                style: TextStyle(
-                  color: isExcluded ? Colors.green : colors.colorRedBox,
+                style: context.appFonts.titleLarge()?.copyWith(
+                  color: actionColor,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -308,8 +314,8 @@ class _ChecklistCard extends ConsumerWidget {
                 isExcluded
                     ? 'Add back to this month\'s payment list'
                     : 'Won\'t count towards this month\'s total',
-                style: TextStyle(
-                    color: colors.colorSecondaryText, fontSize: 12),
+                style: context.appFonts.bodySmall()
+                    ?.copyWith(color: colors.colorSecondaryText),
               ),
               onTap: () async {
                 Navigator.pop(ctx);
@@ -335,6 +341,12 @@ class _ChecklistCard extends ConsumerWidget {
         hasPayment && student.payments.first.isPaid && !isExcluded;
     final paymentId = hasPayment ? student.payments.first.id : null;
 
+    final leadingColor = isExcluded
+        ? colors.colorGray
+        : isPaid
+            ? colors.colorSuccess
+            : colors.colorPrimary;
+
     return Container(
       decoration: BoxDecoration(
         color: isExcluded
@@ -345,7 +357,7 @@ class _ChecklistCard extends ConsumerWidget {
           color: isExcluded
               ? colors.colorGray.withOpacity(0.3)
               : isPaid
-                  ? Colors.green.withOpacity(0.4)
+                  ? colors.colorSuccess.withOpacity(0.4)
                   : colors.colorDivider,
         ),
       ),
@@ -353,28 +365,19 @@ class _ChecklistCard extends ConsumerWidget {
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: CircleAvatar(
-          backgroundColor: isExcluded
-              ? colors.colorGray.withOpacity(0.15)
-              : isPaid
-                  ? Colors.green.withOpacity(0.1)
-                  : colors.colorSecondary,
+          backgroundColor: leadingColor.withOpacity(0.1),
           child: Text(
             student.name[0].toUpperCase(),
-            style: TextStyle(
-              color: isExcluded
-                  ? colors.colorGray
-                  : isPaid
-                      ? Colors.green
-                      : colors.colorPrimary,
+            style: context.appFonts.bodyMedium()?.copyWith(
+              color: leadingColor,
               fontWeight: FontWeight.bold,
             ),
           ),
         ),
         title: Text(
           student.name,
-          style: TextStyle(
-            color:
-                isExcluded ? colors.colorGray : colors.colorPrimaryText,
+          style:  context.appFonts.titleLarge()?.copyWith(
+            color: isExcluded ? colors.colorGray : colors.colorPrimaryText,
             fontWeight: FontWeight.w600,
             decoration:
                 isExcluded ? TextDecoration.lineThrough : null,
@@ -384,8 +387,8 @@ class _ChecklistCard extends ConsumerWidget {
           isExcluded
               ? 'Excluded this month'
               : 'Grade: ${student.grade}  •  ${_mmk(student.monthlyFee)}',
-          style:
-              TextStyle(color: colors.colorSecondaryText, fontSize: 12),
+          style: context.appFonts.bodySmall()
+              ?.copyWith(color: colors.colorSecondaryText),
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -409,7 +412,9 @@ class _ChecklistCard extends ConsumerWidget {
                   width: 52,
                   height: 30,
                   decoration: BoxDecoration(
-                    color: isPaid ? Colors.green : colors.colorDivider,
+                    color: isPaid
+                        ? colors.colorSuccess
+                        : colors.colorDivider,
                     borderRadius: BorderRadius.circular(15),
                   ),
                   child: AnimatedAlign(
@@ -421,8 +426,8 @@ class _ChecklistCard extends ConsumerWidget {
                       width: 24,
                       height: 24,
                       margin: const EdgeInsets.symmetric(horizontal: 3),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
+                      decoration: BoxDecoration(
+                        color: colors.colorWhite,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -460,14 +465,15 @@ class _SummaryChip extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(label,
-                style: TextStyle(
-                    color: color.withOpacity(0.8), fontSize: 11)),
+                style: context.appFonts.bodySmall()
+                  ?.copyWith(color: color.withOpacity(0.8), fontSize: 11),),
             const SizedBox(height: 2),
             Text(value,
-                style: TextStyle(
-                    color: color,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 11)),
+                style: context.appFonts.bodySmall()?.copyWith(
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: 11,
+              ),),
           ],
         ),
       ),
@@ -489,15 +495,17 @@ class _YearStatItem extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label,
-              style: TextStyle(
-                  color: context.appColors.colorSecondaryText,
-                  fontSize: 11)),
+              style: context.appFonts.bodySmall()?.copyWith(
+              color: context.appColors.colorSecondaryText,
+              fontSize: 11,
+            ),),
           const SizedBox(height: 4),
           Text(value,
-              style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12)),
+              style: context.appFonts.bodySmall()?.copyWith(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),),
         ],
       ),
     );

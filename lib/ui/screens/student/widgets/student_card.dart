@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:my_teacher_wallet/core/app_colors.dart';
+import 'package:my_teacher_wallet/core/app_fonts.dart';
 import 'package:my_teacher_wallet/core/route/routes.dart';
 import 'package:my_teacher_wallet/domain/entities/student_entity.dart';
 import 'package:my_teacher_wallet/ui/screens/payment_check/providers/payment_notifier_provider.dart';
@@ -15,9 +16,11 @@ class StudentCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.appColors;
+    final fonts = context.appFonts;
     final hasPayment = student.payments.isNotEmpty;
     final isPaid = hasPayment && student.payments.first.isPaid;
     final paymentId = hasPayment ? student.payments.first.id : null;
+    final avatarColor = isPaid ? colors.colorSuccess : colors.colorPrimary;
 
     return Container(
       decoration: BoxDecoration(
@@ -25,12 +28,12 @@ class StudentCard extends ConsumerWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isPaid
-              ? Colors.green.withOpacity(0.4)
+              ? colors.colorSuccess.withOpacity(0.4)
               : colors.colorDivider,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: colors.colorPrimaryText.withOpacity(0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -48,12 +51,12 @@ class StudentCard extends ConsumerWidget {
               CircleAvatar(
                 radius: 22,
                 backgroundColor: isPaid
-                    ? Colors.green.withOpacity(0.1)
+                    ? colors.colorSuccess
                     : colors.colorSecondary,
                 child: Text(
                   student.name[0].toUpperCase(),
-                  style: TextStyle(
-                    color: isPaid ? Colors.green : colors.colorPrimary,
+                  style: fonts.bodyMedium()?.copyWith(
+                    color: avatarColor,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -66,7 +69,7 @@ class StudentCard extends ConsumerWidget {
                   children: [
                     Text(
                       student.name,
-                      style: TextStyle(
+                      style: fonts.titleLarge()?.copyWith(
                         color: colors.colorPrimaryText,
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
@@ -74,13 +77,14 @@ class StudentCard extends ConsumerWidget {
                     ),
                     Text(
                       'Grade: ${student.grade}',
-                      style: TextStyle(
-                          color: colors.colorSecondaryText, fontSize: 12),
+                      style: fonts.bodySmall()?.copyWith(
+                        color: colors.colorSecondaryText,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       '${student.monthlyFee.toStringAsFixed(0)} MMK',
-                      style: TextStyle(
+                      style: fonts.bodySmall()?.copyWith(
                         color: colors.colorPrimary,
                         fontWeight: FontWeight.w600,
                         fontSize: 13,
@@ -95,7 +99,7 @@ class StudentCard extends ConsumerWidget {
                   onTap: () => ref
                       .read(paymentProvider.notifier)
                       .togglePayment(paymentId, !isPaid, student.monthlyFee),
-                  child: _Toggle(isPaid: isPaid, colors: colors),
+                  child: _Toggle(isPaid: isPaid),
                 )
               else
                 Icon(Icons.hourglass_empty,
@@ -110,9 +114,8 @@ class StudentCard extends ConsumerWidget {
 
 class _Toggle extends StatelessWidget {
   final bool isPaid;
-  final AppColors colors;
 
-  const _Toggle({required this.isPaid, required this.colors});
+  const _Toggle({required this.isPaid});
 
   @override
   Widget build(BuildContext context) {
@@ -121,7 +124,7 @@ class _Toggle extends StatelessWidget {
       width: 52,
       height: 30,
       decoration: BoxDecoration(
-        color: isPaid ? Colors.green : colors.colorDivider,
+        color: isPaid ? context.appColors.colorSuccess : context.appColors.colorDivider,
         borderRadius: BorderRadius.circular(15),
       ),
       child: AnimatedAlign(
@@ -132,8 +135,8 @@ class _Toggle extends StatelessWidget {
           width: 24,
           height: 24,
           margin: const EdgeInsets.symmetric(horizontal: 3),
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: context.appColors.colorWhite,
             shape: BoxShape.circle,
           ),
         ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_teacher_wallet/core/app_colors.dart';
+import 'package:my_teacher_wallet/core/app_fonts.dart';
 import 'package:my_teacher_wallet/data/database_provider.dart';
 import 'package:my_teacher_wallet/data/models/student.dart';
 import 'package:my_teacher_wallet/domain/entities/payment_record_entity.dart';
@@ -10,16 +11,18 @@ import 'package:go_router/go_router.dart';
 import 'package:my_teacher_wallet/ui/screens/payment_check/providers/payment_notifier_provider.dart';
 
 final studentHistoryProvider =
-    FutureProvider.family<List<PaymentRecordEntity>, int>(
-        (ref, studentId) async {
-  final isar = ref.watch(dbProvider);
-  final student = await isar.students.get(studentId);
-  if (student == null) return [];
-  await student.paymentRecords.load();
-  final sorted = student.paymentRecords.toList()
-    ..sort((a, b) => b.month.compareTo(a.month));
-  return sorted.map((p) => p.toEntity()).toList();
-});
+    FutureProvider.family<List<PaymentRecordEntity>, int>((
+      ref,
+      studentId,
+    ) async {
+      final isar = ref.watch(dbProvider);
+      final student = await isar.students.get(studentId);
+      if (student == null) return [];
+      await student.paymentRecords.load();
+      final sorted = student.paymentRecords.toList()
+        ..sort((a, b) => b.month.compareTo(a.month));
+      return sorted.map((p) => p.toEntity()).toList();
+    });
 
 class StudentDetailScreen extends ConsumerWidget {
   final StudentEntity student;
@@ -28,8 +31,18 @@ class StudentDetailScreen extends ConsumerWidget {
 
   String _formatMonth(DateTime date) {
     const months = [
-      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
     ];
     return "${months[date.month - 1]} ${date.year}";
   }
@@ -37,16 +50,15 @@ class StudentDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.appColors;
-    final historyAsync = ref.watch(
-        studentHistoryProvider(student.id ?? 0));
+    final fonts = context.appFonts;
+    final historyAsync = ref.watch(studentHistoryProvider(student.id ?? 0));
 
     return Scaffold(
       backgroundColor: colors.colorNavBarBg,
       appBar: AppBar(
         title: Text(
           student.name,
-          style: TextStyle(
-              fontWeight: FontWeight.bold, color: colors.colorPrimaryText),
+          style: fonts.appBarTitle()?.copyWith(color: colors.colorPrimaryText),
         ),
         backgroundColor: colors.colorNavBarBg,
         foregroundColor: colors.colorPrimaryText,
@@ -84,10 +96,10 @@ class StudentDetailScreen extends ConsumerWidget {
                   backgroundColor: colors.colorSecondary,
                   child: Text(
                     student.name[0].toUpperCase(),
-                    style: TextStyle(
-                        color: colors.colorPrimary,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold),
+                    style: fonts.headlineMedium()?.copyWith(
+                      color: colors.colorPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -97,14 +109,16 @@ class StudentDetailScreen extends ConsumerWidget {
                     children: [
                       Text(
                         student.name,
-                        style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: colors.colorPrimaryText),
+                        style: fonts.headlineSmall()?.copyWith(
+                          color: colors.colorPrimaryText,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       Text(
                         "Grade: ${student.grade}",
-                        style: TextStyle(color: colors.colorSecondaryText),
+                        style: fonts.bodySmall()?.copyWith(
+                          color: colors.colorSecondaryText,
+                        ),
                       ),
                     ],
                   ),
@@ -114,15 +128,17 @@ class StudentDetailScreen extends ConsumerWidget {
                   children: [
                     Text(
                       "${student.monthlyFee.toStringAsFixed(0)}",
-                      style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: colors.colorPrimary),
+                      style: fonts.headlineSmall()?.copyWith(
+                        color: colors.colorPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     Text(
                       "MMK / month",
-                      style: TextStyle(
-                          fontSize: 11, color: colors.colorSecondaryText),
+                      style: fonts.bodySmall()?.copyWith(
+                        color: colors.colorSecondaryText,
+                        fontSize: 11,
+                      ),
                     ),
                   ],
                 ),
@@ -136,10 +152,10 @@ class StudentDetailScreen extends ConsumerWidget {
               children: [
                 Text(
                   "Payment History",
-                  style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: colors.colorPrimaryText),
+                  style: fonts.headlineSmall()?.copyWith(
+                    color: colors.colorPrimaryText,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
@@ -147,71 +163,89 @@ class StudentDetailScreen extends ConsumerWidget {
 
           Expanded(
             child: historyAsync.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(child: Text("Error: $e")),
               data: (payments) {
                 if (payments.isEmpty) {
                   return Center(
                     child: Text(
                       "No payment records yet",
-                      style: TextStyle(color: colors.colorHint),
+                      style: fonts.bodyMedium()?.copyWith(
+                        color: colors.colorHint,
+                      ),
                     ),
                   );
                 }
                 return ListView.separated(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 4),
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
                   itemCount: payments.length,
-                  separatorBuilder: (_, __) =>
-                      const SizedBox(height: 8),
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final payment = payments[index];
                     final isCurrentMonth =
                         payment.month.year == DateTime.now().year &&
-                            payment.month.month == DateTime.now().month;
+                        payment.month.month == DateTime.now().month;
+
+                    Color statusColor;
+                    IconData statusIcon;
+                    String statusLabel;
+
+                    if (payment.isExcluded) {
+                      statusColor = colors.colorGray;
+                      statusIcon = Icons.remove_circle_outline;
+                      statusLabel = 'Excluded';
+                    } else if (payment.isPaid) {
+                      statusColor = colors.colorSuccess;
+                      statusIcon = Icons.check_circle_rounded;
+                      statusLabel = 'Paid';
+                    } else {
+                      statusColor = colors.colorRedBox;
+                      statusIcon = Icons.radio_button_unchecked;
+                      statusLabel = 'Unpaid';
+                    }
+
                     return Container(
                       decoration: BoxDecoration(
                         color: colors.colorWhite,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: payment.isPaid
-                              ? Colors.green.withOpacity(0.3)
+                              ? colors.colorSuccess.withOpacity(0.3)
                               : colors.colorDivider,
                         ),
                       ),
                       child: ListTile(
-                        leading: Icon(
-                          payment.isPaid
-                              ? Icons.check_circle_rounded
-                              : Icons.radio_button_unchecked,
-                          color: payment.isPaid
-                              ? Colors.green
-                              : colors.colorHint,
-                        ),
+                        leading: Icon(statusIcon, color: statusColor),
                         title: Row(
                           children: [
                             Text(
                               _formatMonth(payment.month),
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w600),
+                              style: fonts.titleLarge()?.copyWith(
+                                color: colors.colorPrimaryText,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                             if (isCurrentMonth) ...[
                               const SizedBox(width: 8),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 6, vertical: 2),
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: colors.colorPrimary
-                                      .withOpacity(0.1),
+                                  color: colors.colorPrimary.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
                                   "This month",
-                                  style: TextStyle(
-                                      fontSize: 10,
-                                      color: colors.colorPrimary,
-                                      fontWeight: FontWeight.w500),
+                                  style: fonts.bodySmall()?.copyWith(
+                                    color: colors.colorPrimary,
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 10,
+                                  ),
                                 ),
                               ),
                             ],
@@ -221,19 +255,14 @@ class StudentDetailScreen extends ConsumerWidget {
                           payment.isPaid
                               ? "${payment.amountPaid.toStringAsFixed(0)} MMK received"
                               : "Pending",
-                          style: TextStyle(
-                            color: payment.isPaid
-                                ? Colors.green
-                                : colors.colorHint,
-                            fontSize: 12,
+                          style: fonts.bodySmall()?.copyWith(
+                            color: statusColor,
                           ),
                         ),
                         trailing: Text(
                           payment.isPaid ? "Paid" : "Unpaid",
-                          style: TextStyle(
-                            color: payment.isPaid
-                                ? Colors.green
-                                : colors.colorRedBox,
+                          style: fonts.bodySmall()?.copyWith(
+                            color: statusColor,
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
                           ),

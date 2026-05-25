@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_teacher_wallet/core/app_colors.dart';
+import 'package:my_teacher_wallet/core/app_fonts.dart';
 import 'package:my_teacher_wallet/ui/screens/payment_check/providers/payment_notifier_provider.dart';
 
 String _mmk(double value) {
@@ -25,6 +26,7 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.appColors;
+    final fonts = context.appFonts;
     final now = DateTime.now();
     final stateAsync = ref.watch(paymentProvider);
 
@@ -66,18 +68,18 @@ class HomeScreen extends ConsumerWidget {
                 children: [
                   // ── Header ────────────────────────────────────────────
                   Text(
-                    'My Teacher Wallet',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+                    "My Teacher Wallet",
+                    style: fonts.headlineLarge()?.copyWith(
                       color: colors.colorPrimaryText,
+                      fontSize: 22,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${_monthName(now.month)} ${now.year}',
-                    style: TextStyle(
-                        fontSize: 14, color: colors.colorSecondaryText),
+                    "${_monthName(now.month)} ${now.year}",
+                    style: fonts.bodyMedium()?.copyWith(
+                      color: colors.colorSecondaryText,
+                    ),
                   ),
                   const SizedBox(height: 24),
 
@@ -107,16 +109,16 @@ class HomeScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Total Collected',
-                          style: TextStyle(
-                              color: Colors.white.withOpacity(0.85),
-                              fontSize: 13),
+                          "Total Collected",
+                          style: fonts.bodySmall()?.copyWith(
+                            color: colors.colorWhite.withOpacity(0.85),
+                          ),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          _mmk(totalCollected),
-                          style: const TextStyle(
-                            color: Colors.white,
+                          "${totalCollected.toStringAsFixed(0)} MMK",
+                          style: fonts.headlineLarge()?.copyWith(
+                            color: colors.colorWhite,
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
                           ),
@@ -140,17 +142,18 @@ class HomeScreen extends ConsumerWidget {
                               MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              '$paidCount of ${activeStudents.length} students paid',
-                              style: TextStyle(
-                                  color: Colors.white.withOpacity(0.85),
-                                  fontSize: 12),
+                              "$paidCount of ${students.length} students paid",
+                              style: fonts.bodySmall()?.copyWith(
+                                color:
+                                    colors.colorWhite.withOpacity(0.85),
+                              ),
                             ),
                             Text(
-                              '${(progress * 100).toStringAsFixed(0)}%',
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold),
+                              "${(progress * 100).toStringAsFixed(0)}%",
+                              style: fonts.bodySmall()?.copyWith(
+                                color: colors.colorWhite,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ],
                         ),
@@ -193,10 +196,9 @@ class HomeScreen extends ConsumerWidget {
                       children: [
                         Text(
                           'Pending Students',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                          style: fonts.headlineSmall()?.copyWith(
                             color: colors.colorPrimaryText,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -209,10 +211,9 @@ class HomeScreen extends ConsumerWidget {
                           ),
                           child: Text(
                             '${pendingStudents.length}',
-                            style: TextStyle(
+                            style: fonts.bodySmall()?.copyWith(
                               color: colors.colorRedBox,
                               fontWeight: FontWeight.bold,
-                              fontSize: 12,
                             ),
                           ),
                         ),
@@ -238,10 +239,9 @@ class HomeScreen extends ConsumerWidget {
                                     colors.colorRedBox.withOpacity(0.1),
                                 child: Text(
                                   student.name[0].toUpperCase(),
-                                  style: TextStyle(
+                                  style: fonts.bodySmall()?.copyWith(
                                     color: colors.colorRedBox,
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 13,
                                   ),
                                 ),
                               ),
@@ -253,26 +253,25 @@ class HomeScreen extends ConsumerWidget {
                                   children: [
                                     Text(
                                       student.name,
-                                      style: TextStyle(
+                                      style: fonts.titleLarge()?.copyWith(
                                         color: colors.colorPrimaryText,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
                                     Text(
                                       'Grade: ${student.grade}',
-                                      style: TextStyle(
-                                          color: colors.colorSecondaryText,
-                                          fontSize: 12),
+                                      style: fonts.bodySmall()?.copyWith(
+                                        color: colors.colorSecondaryText,
+                                      ),
                                     ),
                                   ],
                                 ),
                               ),
                               Text(
                                 _mmk(student.monthlyFee),
-                                style: TextStyle(
+                                style: fonts.bodySmall()?.copyWith(
                                   color: colors.colorRedBox,
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 13,
                                 ),
                               ),
                             ],
@@ -286,18 +285,17 @@ class HomeScreen extends ConsumerWidget {
                     children: [
                       Text(
                         'This Month',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                        style: fonts.headlineSmall()?.copyWith(
                           color: colors.colorPrimaryText,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         '${students.length} student${students.length == 1 ? '' : 's'}',
-                        style: TextStyle(
-                            color: colors.colorSecondaryText,
-                            fontSize: 12),
+                        style: fonts.bodySmall()?.copyWith(
+                          color: colors.colorSecondaryText,
+                        ),
                       ),
                     ],
                   ),
@@ -310,7 +308,8 @@ class HomeScreen extends ConsumerWidget {
                         child: Text(
                           'No students yet.\nAdd students from the Students tab.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: colors.colorHint),
+                          style: fonts.bodyMedium()
+                              ?.copyWith(color: colors.colorHint),
                         ),
                       ),
                     )
@@ -320,6 +319,11 @@ class HomeScreen extends ConsumerWidget {
                       final isPaid =
                           student.payments.any((p) => p.isPaid);
                       final isExcluded = student.isExcludedThisMonth;
+                      final statusColor = isExcluded
+                          ? colors.colorGray
+                          : isPaid
+                              ? colors.colorSuccess
+                              : colors.colorRedBox;
                       return Container(
                         margin: const EdgeInsets.only(bottom: 10),
                         padding: const EdgeInsets.symmetric(
@@ -334,21 +338,12 @@ class HomeScreen extends ConsumerWidget {
                           children: [
                             CircleAvatar(
                               radius: 18,
-                              backgroundColor: isExcluded
-                                  ? colors.colorGray.withOpacity(0.15)
-                                  : isPaid
-                                      ? Colors.green.withOpacity(0.1)
-                                      : colors.colorSecondary,
+                              backgroundColor: statusColor.withOpacity(0.1),
                               child: Text(
                                 student.name[0].toUpperCase(),
-                                style: TextStyle(
-                                  color: isExcluded
-                                      ? colors.colorGray
-                                      : isPaid
-                                          ? Colors.green
-                                          : colors.colorPrimary,
+                                style: fonts.bodySmall()?.copyWith(
+                                  color: statusColor,
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 13,
                                 ),
                               ),
                             ),
@@ -356,7 +351,7 @@ class HomeScreen extends ConsumerWidget {
                             Expanded(
                               child: Text(
                                 student.name,
-                                style: TextStyle(
+                                style: fonts.titleLarge()?.copyWith(
                                   color: isExcluded
                                       ? colors.colorGray
                                       : colors.colorPrimaryText,
@@ -368,12 +363,7 @@ class HomeScreen extends ConsumerWidget {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: isExcluded
-                                    ? colors.colorGray.withOpacity(0.1)
-                                    : isPaid
-                                        ? Colors.green.withOpacity(0.1)
-                                        : colors.colorRedBox
-                                            .withOpacity(0.08),
+                                color: statusColor.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
@@ -382,14 +372,9 @@ class HomeScreen extends ConsumerWidget {
                                     : isPaid
                                         ? 'Paid'
                                         : 'Pending',
-                                style: TextStyle(
-                                  color: isExcluded
-                                      ? colors.colorGray
-                                      : isPaid
-                                          ? Colors.green
-                                          : colors.colorRedBox,
+                                style: fonts.bodySmall()?.copyWith(
+                                  color: statusColor,
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 12,
                                 ),
                               ),
                             ),
@@ -434,14 +419,15 @@ class _StatCard extends StatelessWidget {
           Icon(icon, color: color, size: 20),
           const SizedBox(height: 8),
           Text(label,
-              style: TextStyle(
-                  color: color.withOpacity(0.8), fontSize: 12)),
+              style: context.appFonts.bodySmall()
+                ?.copyWith(color: color.withOpacity(0.8)),),
           const SizedBox(height: 4),
           Text(value,
-              style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13)),
+              style: context.appFonts.bodySmall()?.copyWith(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),),
         ],
       ),
     );
