@@ -2,15 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_teacher_wallet/core/app_colors.dart';
 import 'package:my_teacher_wallet/core/app_fonts.dart';
+import 'package:my_teacher_wallet/ui/screens/home/widgets/stat_card.dart';
 import 'package:my_teacher_wallet/ui/screens/payment_check/providers/payment_notifier_provider.dart';
-
-String _mmk(double value) {
-  final formatted = value.toInt().toString().replaceAllMapped(
-        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-        (m) => '${m[1]},',
-      );
-  return '$formatted MMK';
-}
+import 'package:my_teacher_wallet/utils/number_formatter.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -116,7 +110,7 @@ class HomeScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          "${totalCollected.toStringAsFixed(0)} MMK",
+                          NumberFormatter.mmk(totalCollected),
                           style: fonts.headlineLarge()?.copyWith(
                             color: colors.colorWhite,
                             fontSize: 28,
@@ -167,9 +161,9 @@ class HomeScreen extends ConsumerWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: _StatCard(
+                        child: StatCard(
                           label: 'Expected',
-                          value: _mmk(totalExpected),
+                          value: NumberFormatter.mmk(totalExpected),
                           icon: Icons.account_balance_wallet_outlined,
                           color: colors.colorPrimary,
                           bgColor: colors.colorSecondary,
@@ -177,9 +171,9 @@ class HomeScreen extends ConsumerWidget {
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: _StatCard(
+                        child: StatCard(
                           label: 'Pending',
-                          value: _mmk(totalExpected - totalCollected),
+                          value: NumberFormatter.mmk(totalExpected - totalCollected),
                           icon: Icons.pending_actions_outlined,
                           color: colors.colorRedBox,
                           bgColor: colors.colorRedBox.withOpacity(0.08),
@@ -268,7 +262,7 @@ class HomeScreen extends ConsumerWidget {
                                 ),
                               ),
                               Text(
-                                _mmk(student.monthlyFee),
+                                NumberFormatter.mmk(student.monthlyFee),
                                 style: fonts.bodySmall()?.copyWith(
                                   color: colors.colorRedBox,
                                   fontWeight: FontWeight.bold,
@@ -387,48 +381,6 @@ class HomeScreen extends ConsumerWidget {
             );
           },
         ),
-      ),
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
-  final Color bgColor;
-
-  const _StatCard({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-    required this.bgColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-          color: bgColor, borderRadius: BorderRadius.circular(14)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 8),
-          Text(label,
-              style: context.appFonts.bodySmall()
-                ?.copyWith(color: color.withOpacity(0.8)),),
-          const SizedBox(height: 4),
-          Text(value,
-              style: context.appFonts.bodySmall()?.copyWith(
-              color: color,
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-            ),),
-        ],
       ),
     );
   }

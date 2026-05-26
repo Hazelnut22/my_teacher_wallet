@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:my_teacher_wallet/core/app_colors.dart';
+import 'package:my_teacher_wallet/core/app_fonts.dart';
 import 'package:my_teacher_wallet/core/route/routes.dart';
 import 'package:my_teacher_wallet/core/services/app_config_service.dart';
 import 'package:my_teacher_wallet/domain/entities/student_entity.dart';
 import 'package:my_teacher_wallet/ui/screens/payment_check/providers/payment_notifier_provider.dart';
 import 'package:my_teacher_wallet/ui/screens/student/providers/student_provider.dart';
+import 'package:my_teacher_wallet/ui/screens/student/widgets/swipable_student_card.dart';
 
 class StudentsScreen extends ConsumerStatefulWidget {
   const StudentsScreen({super.key});
@@ -28,14 +30,14 @@ class _StudentsScreenState extends ConsumerState<StudentsScreen> {
   }
 
   Future<void> _checkSwipeHint() async {
-    final seen = await AppConfigService.hasSeenSwipeHint();
+    final seen = await SharedPreferenceService.hasSeenSwipeHint();
     if (!seen && mounted) {
       setState(() => _showSwipeHint = true);
     }
   }
 
   Future<void> _dismissSwipeHint() async {
-    await AppConfigService.markSwipeHintSeen();
+    await SharedPreferenceService.markSwipeHintSeen();
     if (mounted) setState(() => _showSwipeHint = false);
   }
 
@@ -49,9 +51,11 @@ class _StudentsScreenState extends ConsumerState<StudentsScreen> {
     if (_query.isEmpty) return students;
     final q = _query.toLowerCase();
     return students
-        .where((s) =>
-            s.name.toLowerCase().contains(q) ||
-            s.grade.toLowerCase().contains(q))
+        .where(
+          (s) =>
+              s.name.toLowerCase().contains(q) ||
+              s.grade.toLowerCase().contains(q),
+        )
         .toList();
   }
 
@@ -60,10 +64,12 @@ class _StudentsScreenState extends ConsumerState<StudentsScreen> {
           context: context,
           builder: (ctx) => AlertDialog(
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16)),
+              borderRadius: BorderRadius.circular(16),
+            ),
             title: const Text('Delete Student'),
             content: Text(
-                'Remove $name? All payment records will also be deleted.'),
+              'Remove $name? All payment records will also be deleted.',
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
@@ -71,8 +77,10 @@ class _StudentsScreenState extends ConsumerState<StudentsScreen> {
               ),
               TextButton(
                 onPressed: () => Navigator.pop(ctx, true),
-                child: const Text('Delete',
-                    style: TextStyle(color: Colors.red)),
+                child: const Text(
+                  'Delete',
+                  style: TextStyle(color: Colors.red),
+                ),
               ),
             ],
           ),
@@ -90,8 +98,9 @@ class _StudentsScreenState extends ConsumerState<StudentsScreen> {
       appBar: AppBar(
         title: Text(
           'Students',
-          style: TextStyle(
-              color: colors.colorPrimaryText, fontWeight: FontWeight.bold),
+          style: context.appFonts.appBarTitle()?.copyWith(
+            color: colors.colorPrimaryText,
+          ),
         ),
         backgroundColor: colors.colorNavBarBg,
         elevation: 0,
@@ -102,13 +111,11 @@ class _StudentsScreenState extends ConsumerState<StudentsScreen> {
           if (_showSwipeHint)
             Container(
               margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: colors.colorPrimary.withOpacity(0.08),
                 borderRadius: BorderRadius.circular(12),
-                border:
-                    Border.all(color: colors.colorPrimary.withOpacity(0.2)),
+                border: Border.all(color: colors.colorPrimary.withOpacity(0.2)),
               ),
               child: Row(
                 children: [
@@ -117,16 +124,20 @@ class _StudentsScreenState extends ConsumerState<StudentsScreen> {
                   Expanded(
                     child: Text(
                       'Swipe right to edit  •  Swipe left to delete',
-                      style: TextStyle(
-                          color: colors.colorPrimary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500),
+                      style: context.appFonts.bodyMedium()?.copyWith(
+                        color: colors.colorPrimary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                   GestureDetector(
                     onTap: _dismissSwipeHint,
-                    child: Icon(Icons.close,
-                        color: colors.colorPrimary, size: 16),
+                    child: Icon(
+                      Icons.close,
+                      color: colors.colorPrimary,
+                      size: 16,
+                    ),
                   ),
                 ],
               ),
@@ -138,10 +149,18 @@ class _StudentsScreenState extends ConsumerState<StudentsScreen> {
             child: TextField(
               controller: _searchController,
               onChanged: (v) => setState(() => _query = v),
-              style: TextStyle(color: colors.colorPrimaryText),
+              style: context.appFonts.headlineLarge()?.copyWith(
+                color: colors.colorPrimaryText,
+                fontSize: 18,
+                fontWeight: FontWeight.w400,
+              ),
               decoration: InputDecoration(
                 hintText: 'Search by name or grade...',
-                hintStyle: TextStyle(color: colors.colorHint),
+                hintStyle: context.appFonts.headlineLarge()?.copyWith(
+                color: colors.colorHint,
+                fontSize: 18,
+                fontWeight: FontWeight.w400,
+              ),
                 prefixIcon: Icon(Icons.search, color: colors.colorHint),
                 suffixIcon: _query.isNotEmpty
                     ? IconButton(
@@ -161,8 +180,7 @@ class _StudentsScreenState extends ConsumerState<StudentsScreen> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide:
-                      BorderSide(color: colors.colorPrimary, width: 2),
+                  borderSide: BorderSide(color: colors.colorPrimary, width: 2),
                 ),
               ),
             ),
@@ -171,8 +189,7 @@ class _StudentsScreenState extends ConsumerState<StudentsScreen> {
           // ── Student count + list ───────────────────────────────────────
           Expanded(
             child: stateAsync.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
+              loading: () => const Center(child: CircularProgressIndicator()),
               error: (err, _) => Center(child: Text('Error: $err')),
               data: (paymentState) {
                 final allStudents = paymentState.currentMonthStudents;
@@ -190,7 +207,7 @@ class _StudentsScreenState extends ConsumerState<StudentsScreen> {
                             _query.isNotEmpty
                                 ? '${students.length} of ${allStudents.length} students'
                                 : '${allStudents.length} student${allStudents.length == 1 ? '' : 's'}',
-                            style: TextStyle(
+                            style: context.appFonts.bodyMedium()?.copyWith(
                               color: colors.colorSecondaryText,
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
@@ -204,14 +221,13 @@ class _StudentsScreenState extends ConsumerState<StudentsScreen> {
                       child: students.isEmpty
                           ? _buildEmptyState(colors)
                           : ListView.separated(
-                              padding:
-                                  const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                               itemCount: students.length,
                               separatorBuilder: (_, __) =>
                                   const SizedBox(height: 10),
                               itemBuilder: (context, index) {
                                 final student = students[index];
-                                return _SwipeStudentCard(
+                                return SwipableStudentCard(
                                   student: student,
                                   onTap: () => context.pushNamed(
                                     Routes.studentDetail.name,
@@ -223,7 +239,9 @@ class _StudentsScreenState extends ConsumerState<StudentsScreen> {
                                   ),
                                   onDelete: () async {
                                     final confirm = await _confirmDelete(
-                                        context, student.name);
+                                      context,
+                                      student.name,
+                                    );
                                     if (confirm && student.id != null) {
                                       await ref
                                           .read(studentProvider.notifier)
@@ -261,203 +279,25 @@ class _StudentsScreenState extends ConsumerState<StudentsScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(FontAwesomeIcons.userGraduate,
-              size: 64, color: colors.colorHint),
+          Icon(
+            FontAwesomeIcons.userGraduate,
+            size: 64,
+            color: colors.colorHint,
+          ),
           const SizedBox(height: 16),
           Text(
             _query.isNotEmpty
                 ? 'No students match "$_query"'
                 : 'No students added yet',
-            style:
-                TextStyle(color: colors.colorPrimaryText, fontSize: 16),
+            style:  context.appFonts.bodyLarge()?.copyWith(color: colors.colorPrimaryText),
           ),
           if (_query.isEmpty) ...[
             const SizedBox(height: 8),
-            Text('Tap + to add your first student',
-                style: TextStyle(color: colors.colorHint, fontSize: 13)),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-// ── Swipeable student card ─────────────────────────────────────────────────────
-
-class _SwipeStudentCard extends StatelessWidget {
-  final StudentEntity student;
-  final VoidCallback onTap;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
-
-  const _SwipeStudentCard({
-    required this.student,
-    required this.onEdit,
-    required this.onDelete, required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.appColors;
-    final isPaid = student.payments.isNotEmpty &&
-        student.payments.first.isPaid;
-    final isExcluded = student.isExcludedThisMonth;
-
-    return Dismissible(
-      key: ValueKey(student.id),
-      background: _SwipeBg(
-        color: colors.colorPrimary,
-        icon: Icons.edit_outlined,
-        alignment: Alignment.centerLeft,
-        label: 'Edit',
-      ),
-      secondaryBackground: _SwipeBg(
-        color: colors.colorRedBox,
-        icon: Icons.delete_outline,
-        alignment: Alignment.centerRight,
-        label: 'Delete',
-      ),
-      confirmDismiss: (direction) async {
-        if (direction == DismissDirection.startToEnd) {
-          onEdit();
-          return false;
-        } else {
-          onDelete();
-          return false;
-        }
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: colors.colorWhite,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isExcluded
-                ? colors.colorGray.withOpacity(0.3)
-                : isPaid
-                    ? Colors.green.withOpacity(0.4)
-                    : colors.colorDivider,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.02),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+            Text(
+              'Tap + to add your first student',
+              style: context.appFonts.bodyMedium()?.copyWith(color: colors.colorHint, fontSize: 13),
             ),
           ],
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 22,
-                  backgroundColor: isExcluded
-                      ? colors.colorGray.withOpacity(0.15)
-                      : isPaid
-                          ? Colors.green.withOpacity(0.1)
-                          : colors.colorSecondary,
-                  child: Text(
-                    student.name[0].toUpperCase(),
-                    style: TextStyle(
-                      color: isExcluded
-                          ? colors.colorGray
-                          : isPaid
-                              ? Colors.green
-                              : colors.colorPrimary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        student.name,
-                        style: TextStyle(
-                          color: isExcluded
-                              ? colors.colorGray
-                              : colors.colorPrimaryText,
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        'Grade: ${student.grade}',
-                        style: TextStyle(
-                            color: colors.colorSecondaryText,
-                            fontSize: 12),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${_formatMMK(student.monthlyFee)} / month',
-                        style: TextStyle(
-                          color: isExcluded
-                              ? colors.colorGray
-                              : colors.colorPrimary,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(Icons.chevron_right,
-                    color: colors.colorGray, size: 20),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _formatMMK(double value) {
-    final formatted = value.toInt().toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (m) => '${m[1]},',
-        );
-    return '$formatted MMK';
-  }
-}
-
-class _SwipeBg extends StatelessWidget {
-  final Color color;
-  final IconData icon;
-  final AlignmentGeometry alignment;
-  final String label;
-
-  const _SwipeBg({
-    required this.color,
-    required this.icon,
-    required this.alignment,
-    required this.label,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      alignment: alignment,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: Colors.white, size: 22),
-          const SizedBox(height: 4),
-          Text(label,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600)),
         ],
       ),
     );

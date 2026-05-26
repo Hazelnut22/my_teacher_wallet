@@ -1,6 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-class AppConfigService {
+class SharedPreferenceService {
   static const _keyFirstUseDate = 'first_use_date';
   static const _keySwipeHintSeen = 'swipe_hint_seen';
 

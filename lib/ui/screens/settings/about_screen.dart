@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:my_teacher_wallet/core/app_colors.dart';
+import 'package:my_teacher_wallet/ui/screens/settings/widgets/info_row.dart';
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
@@ -71,57 +72,18 @@ class AboutScreen extends StatelessWidget {
 
           const SizedBox(height: 32),
 
-          _InfoRow(
+          InfoRow(
               icon: Icons.build_outlined,
               label: 'Built with',
-              value: 'Flutter & Dart',
-              colors: colors),
-          _InfoRow(
+              value: 'Flutter & Dart',),
+          InfoRow(
               icon: Icons.storage_outlined,
               label: 'Database',
-              value: 'Isar (local)',
-              colors: colors),
-          _InfoRow(
+              value: 'Isar (local)',),
+          InfoRow(
               icon: Icons.update,
               label: 'Last Updated',
-              value: 'May 2026',
-              colors: colors),
-        ],
-      ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final AppColors colors;
-
-  const _InfoRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.colors,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        children: [
-          Icon(icon, color: colors.colorPrimary, size: 18),
-          const SizedBox(width: 12),
-          Text(label,
-              style: TextStyle(
-                  color: colors.colorSecondaryText, fontSize: 13)),
-          const Spacer(),
-          Text(value,
-              style: TextStyle(
-                  color: colors.colorPrimaryText,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13)),
+              value: 'May 2026',),
         ],
       ),
     );

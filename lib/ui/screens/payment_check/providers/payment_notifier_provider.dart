@@ -23,7 +23,7 @@ class PaymentNotifier extends AsyncNotifier<PaymentState> {
         .read(ensureMonthlyRecordsUseCaseProvider)
         .execute(currentMonth);
 
-    final firstUse = await AppConfigService.getOrSetFirstUseDate();
+    final firstUse = await SharedPreferenceService.getOrSetFirstUseDate();
     final months = _buildMonthList(firstUse, currentMonth);
     final allStudents = await _getAllStudents();
 

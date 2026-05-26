@@ -4,16 +4,11 @@ import 'package:go_router/go_router.dart';
 import 'package:my_teacher_wallet/core/app_colors.dart';
 import 'package:my_teacher_wallet/core/app_fonts.dart';
 import 'package:my_teacher_wallet/core/route/routes.dart';
-import 'package:my_teacher_wallet/domain/entities/student_entity.dart';
 import 'package:my_teacher_wallet/ui/screens/payment_check/providers/payment_notifier_provider.dart';
-
-String _mmk(double value) {
-  final formatted = value.toInt().toString().replaceAllMapped(
-        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-        (m) => '${m[1]},',
-      );
-  return '$formatted MMK';
-}
+import 'package:my_teacher_wallet/ui/screens/payment_check/widgets/checklist_card.dart';
+import 'package:my_teacher_wallet/ui/screens/payment_check/widgets/summary_chip.dart';
+import 'package:my_teacher_wallet/ui/screens/payment_check/widgets/year_stat_item.dart';
+import 'package:my_teacher_wallet/utils/number_formatter.dart';
 
 class PaymentCheckScreen extends ConsumerWidget {
   const PaymentCheckScreen({super.key});
@@ -101,22 +96,22 @@ class PaymentCheckScreen extends ConsumerWidget {
                     const SizedBox(height: 14),
                     Row(
                       children: [
-                        _YearStatItem(
+                        YearStatItem(
                           label: 'Collected',
-                          value: _mmk(stats.totalCollectedYear),
+                          value: NumberFormatter.mmk(stats.totalCollectedYear),
                           color: Colors.green,
                         ),
-                        _YearStatItem(
+                        YearStatItem(
                           label: 'Monthly Avg',
-                          value: _mmk(stats.monthlyAverage),
+                          value: NumberFormatter.mmk(stats.monthlyAverage),
                           color: colors.colorPrimary,
                         ),
-                        _YearStatItem(
+                        YearStatItem(
                           label: 'Rate',
                           value:
                               '${(stats.collectionRate * 100).toStringAsFixed(1)}%',
                           color: stats.collectionRate >= 0.8
-                              ? Colors.green
+                              ? colors.colorSuccess
                               : colors.colorRedBox,
                         ),
                       ],
@@ -191,21 +186,21 @@ class PaymentCheckScreen extends ConsumerWidget {
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        _SummaryChip(
+                        SummaryChip(
                           label: 'Paid',
                           value: '$paidCount/${activeStudents.length}',
                           color: colors.colorSuccess,
                         ),
                         const SizedBox(width: 8),
-                        _SummaryChip(
+                        SummaryChip(
                           label: 'Collected',
-                          value: _mmk(totalCollected),
+                          value: NumberFormatter.mmk(totalCollected),
                           color: colors.colorPrimary,
                         ),
                         const SizedBox(width: 8),
-                        _SummaryChip(
+                        SummaryChip(
                           label: 'Pending',
-                          value: _mmk(totalExpected - totalCollected),
+                          value: NumberFormatter.mmk(totalExpected - totalCollected),
                           color: colors.colorRedBox,
                         ),
                       ],
@@ -229,284 +224,11 @@ class PaymentCheckScreen extends ConsumerWidget {
               else
                 ...students.map((student) => Padding(
                       padding: const EdgeInsets.only(bottom: 10),
-                      child: _ChecklistCard(student: student),
+                      child: ChecklistCard(student: student),
                     )),
             ],
           );
         },
-      ),
-    );
-  }
-}
-
-// ── Checklist card ─────────────────────────────────────────────────────────────
-
-class _ChecklistCard extends ConsumerWidget {
-  final StudentEntity student;
-  const _ChecklistCard({required this.student});
-
-  void _showManageSheet(BuildContext context, WidgetRef ref) {
-    final colors = context.appColors;
-    final isExcluded = student.isExcludedThisMonth;
-    final paymentId =
-        student.payments.isNotEmpty ? student.payments.first.id : null;
-    final actionColor =
-        isExcluded ? colors.colorSuccess : colors.colorRedBox;
-
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-          borderRadius:
-              BorderRadius.vertical(top: Radius.circular(20))),
-      backgroundColor: colors.colorWhite,
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: colors.colorGray.withOpacity(0.4),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(student.name,
-                style: context.appFonts.headlineSmall()?.copyWith(
-                color: colors.colorPrimaryText,
-                fontWeight: FontWeight.bold,
-              ),),
-            Text('Grade: ${student.grade}',
-                style: context.appFonts.bodySmall()
-                  ?.copyWith(color: colors.colorSecondaryText),),
-            const SizedBox(height: 20),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: actionColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  isExcluded
-                      ? Icons.person_add_outlined
-                      : Icons.person_remove_outlined,
-                  color:
-                      actionColor,
-                ),
-              ),
-              title: Text(
-                isExcluded
-                    ? 'Include this student this month'
-                    : 'Exclude this student this month',
-                style: context.appFonts.titleLarge()?.copyWith(
-                  color: actionColor,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              subtitle: Text(
-                isExcluded
-                    ? 'Add back to this month\'s payment list'
-                    : 'Won\'t count towards this month\'s total',
-                style: context.appFonts.bodySmall()
-                    ?.copyWith(color: colors.colorSecondaryText),
-              ),
-              onTap: () async {
-                Navigator.pop(ctx);
-                if (paymentId != null) {
-                  await ref
-                      .read(paymentProvider.notifier)
-                      .toggleExcluded(paymentId, !isExcluded);
-                }
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final colors = context.appColors;
-    final isExcluded = student.isExcludedThisMonth;
-    final hasPayment = student.payments.isNotEmpty;
-    final isPaid =
-        hasPayment && student.payments.first.isPaid && !isExcluded;
-    final paymentId = hasPayment ? student.payments.first.id : null;
-
-    final leadingColor = isExcluded
-        ? colors.colorGray
-        : isPaid
-            ? colors.colorSuccess
-            : colors.colorPrimary;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: isExcluded
-            ? colors.colorGray.withOpacity(0.06)
-            : colors.colorWhite,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isExcluded
-              ? colors.colorGray.withOpacity(0.3)
-              : isPaid
-                  ? colors.colorSuccess.withOpacity(0.4)
-                  : colors.colorDivider,
-        ),
-      ),
-      child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        leading: CircleAvatar(
-          backgroundColor: leadingColor.withOpacity(0.1),
-          child: Text(
-            student.name[0].toUpperCase(),
-            style: context.appFonts.bodyMedium()?.copyWith(
-              color: leadingColor,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        title: Text(
-          student.name,
-          style:  context.appFonts.titleLarge()?.copyWith(
-            color: isExcluded ? colors.colorGray : colors.colorPrimaryText,
-            fontWeight: FontWeight.w600,
-            decoration:
-                isExcluded ? TextDecoration.lineThrough : null,
-          ),
-        ),
-        subtitle: Text(
-          isExcluded
-              ? 'Excluded this month'
-              : 'Grade: ${student.grade}  •  ${_mmk(student.monthlyFee)}',
-          style: context.appFonts.bodySmall()
-              ?.copyWith(color: colors.colorSecondaryText),
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            GestureDetector(
-              onTap: () => _showManageSheet(context, ref),
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Icon(Icons.more_vert,
-                    color: colors.colorGray, size: 20),
-              ),
-            ),
-            const SizedBox(width: 4),
-            if (!isExcluded && paymentId != null)
-              GestureDetector(
-                onTap: () => ref
-                    .read(paymentProvider.notifier)
-                    .togglePayment(paymentId, !isPaid, student.monthlyFee),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: 52,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: isPaid
-                        ? colors.colorSuccess
-                        : colors.colorDivider,
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: AnimatedAlign(
-                    duration: const Duration(milliseconds: 200),
-                    alignment: isPaid
-                        ? Alignment.centerRight
-                        : Alignment.centerLeft,
-                    child: Container(
-                      width: 24,
-                      height: 24,
-                      margin: const EdgeInsets.symmetric(horizontal: 3),
-                      decoration: BoxDecoration(
-                        color: colors.colorWhite,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                ),
-              )
-            else if (isExcluded)
-              Icon(Icons.remove_circle_outline,
-                  color: colors.colorGray, size: 22),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SummaryChip extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color color;
-  const _SummaryChip(
-      {required this.label, required this.value, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding:
-            const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label,
-                style: context.appFonts.bodySmall()
-                  ?.copyWith(color: color.withOpacity(0.8), fontSize: 11),),
-            const SizedBox(height: 2),
-            Text(value,
-                style: context.appFonts.bodySmall()?.copyWith(
-                color: color,
-                fontWeight: FontWeight.bold,
-                fontSize: 11,
-              ),),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _YearStatItem extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color color;
-  const _YearStatItem(
-      {required this.label, required this.value, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label,
-              style: context.appFonts.bodySmall()?.copyWith(
-              color: context.appColors.colorSecondaryText,
-              fontSize: 11,
-            ),),
-          const SizedBox(height: 4),
-          Text(value,
-              style: context.appFonts.bodySmall()?.copyWith(
-              color: color,
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-            ),),
-        ],
       ),
     );
   }

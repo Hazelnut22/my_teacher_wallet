@@ -3,14 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_teacher_wallet/core/app_colors.dart';
 import 'package:my_teacher_wallet/core/app_fonts.dart';
 import 'package:my_teacher_wallet/ui/screens/payment_check/providers/payment_notifier_provider.dart';
-
-String _mmk(double value) {
-  final formatted = value.toInt().toString().replaceAllMapped(
-        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-        (m) => '${m[1]},',
-      );
-  return '$formatted MMK';
-}
+import 'package:my_teacher_wallet/ui/screens/payment_check/widgets/highlight_card.dart';
+import 'package:my_teacher_wallet/ui/screens/payment_check/widgets/mini_stat.dart';
+import 'package:my_teacher_wallet/ui/screens/payment_check/widgets/section_tile.dart';
+import 'package:my_teacher_wallet/utils/number_formatter.dart';
 
 const _monthNames = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -92,7 +88,7 @@ class ReportScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      _mmk(report.totalCollected),
+                      NumberFormatter.mmk(report.totalCollected),
                       style: fonts.headlineLarge()?.copyWith(
                         color: colors.colorWhite,
                         fontSize: 28,
@@ -101,7 +97,7 @@ class ReportScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'of ${_mmk(report.totalExpected)} expected',
+                      'of ${NumberFormatter.mmk(report.totalExpected)} expected',
                       style: fonts.bodySmall()?.copyWith(
                         color: colors.colorWhite.withOpacity(0.75),
                       ),
@@ -112,9 +108,9 @@ class ReportScreen extends ConsumerWidget {
                       child: LinearProgressIndicator(
                         value: report.collectionRate,
                         minHeight: 6,
-                        backgroundColor: Colors.white.withOpacity(0.25),
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                            Colors.white),
+                        backgroundColor: colors.colorWhite.withOpacity(0.25),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                            colors.colorWhite),
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -143,13 +139,13 @@ class ReportScreen extends ConsumerWidget {
               const SizedBox(height: 16),
 
               // ── Highlights ─────────────────────────────────────────────
-              _SectionTitle(title: 'Highlights'),
+              SectionTitle(title: 'Highlights'),
               const SizedBox(height: 8),
               Row(
                 children: [
                   if (report.bestMonth != null)
                     Expanded(
-                      child: _HighlightCard(
+                      child: HighlightCard(
                         label: 'Best Month',
                         value: _monthNames[
                             report.bestMonth!.month.month - 1],
@@ -165,7 +161,7 @@ class ReportScreen extends ConsumerWidget {
                   if (report.worstMonth != null &&
                       report.worstMonth != report.bestMonth)
                     Expanded(
-                      child: _HighlightCard(
+                      child: HighlightCard(
                         label: 'Lowest Month',
                         value: _monthNames[
                             report.worstMonth!.month.month - 1],
@@ -179,13 +175,13 @@ class ReportScreen extends ConsumerWidget {
               ),
               if (report.mostConsistentStudent != null) ...[
                 const SizedBox(height: 12),
-                _HighlightCard(
+                HighlightCard(
                   label: 'Most Consistent Student',
                   value: report.mostConsistentStudent!.name,
                   sub:
                       '${report.mostConsistentStudent!.monthsPaid} months paid  •  ${(report.mostConsistentStudent!.attendanceRate * 100).toStringAsFixed(0)}% rate',
                   icon: Icons.star_outline,
-                  color: Colors.amber.shade700,
+                  color: colors.colorWarning,
                   fullWidth: true,
                 ),
               ],
@@ -193,7 +189,7 @@ class ReportScreen extends ConsumerWidget {
               const SizedBox(height: 20),
 
               // ── Monthly trend ──────────────────────────────────────────
-              _SectionTitle(title: 'Monthly Trend'),
+              SectionTitle(title: 'Monthly Trend'),
               const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.all(16),
@@ -206,7 +202,7 @@ class ReportScreen extends ConsumerWidget {
                   children: report.monthlyBreakdown.map((entry) {
                     final rate = entry.collectionRate;
                     final barColor = rate >= 0.8
-                        ? Colors.green
+                        ? colors.colorSuccess
                         : rate >= 0.5
                             ? colors.colorPrimary
                             : colors.colorRedBox;
@@ -275,7 +271,7 @@ class ReportScreen extends ConsumerWidget {
               const SizedBox(height: 20),
 
               // ── Per-student breakdown ──────────────────────────────────
-              _SectionTitle(
+              SectionTitle(
                   title: 'Student Breakdown'),
               const SizedBox(height: 8),
               ...report.studentBreakdown.map((entry) {
@@ -329,7 +325,7 @@ class ReportScreen extends ConsumerWidget {
                             ),
                           ),
                           Text(
-                            _mmk(entry.totalPaid),
+                            NumberFormatter.mmk(entry.totalPaid),
                             style: fonts.bodySmall()?.copyWith(
                               color: rateColor,
                               fontWeight: FontWeight.bold,
@@ -341,16 +337,16 @@ class ReportScreen extends ConsumerWidget {
                       const SizedBox(height: 10),
                       Row(
                         children: [
-                          _MiniStat(
+                          MiniStat(
                               label: 'Paid',
                               value: '${entry.monthsPaid}mo',
                               color: colors.colorSuccess),
-                          _MiniStat(
+                          MiniStat(
                               label: 'Unpaid',
                               value: '${entry.monthsUnpaid}mo',
                               color: colors.colorRedBox),
                           if (entry.monthsExcluded > 0)
-                            _MiniStat(
+                            MiniStat(
                                 label: 'Excluded',
                                 value: '${entry.monthsExcluded}mo',
                                 color: colors.colorGray),
@@ -390,108 +386,6 @@ class ReportScreen extends ConsumerWidget {
             ],
           );
         },
-      ),
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  final String title;
-  const _SectionTitle({required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(title,
-        style: context.appFonts.headlineSmall()?.copyWith(
-            color: context.appColors.colorPrimaryText,
-            fontWeight: FontWeight.bold,
-          ),);
-  }
-}
-
-class _HighlightCard extends StatelessWidget {
-  final String label;
-  final String value;
-  final String sub;
-  final IconData icon;
-  final Color color;
-  final bool fullWidth;
-
-  const _HighlightCard({
-    required this.label,
-    required this.value,
-    required this.sub,
-    required this.icon,
-    required this.color,
-    this.fullWidth = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: fullWidth ? double.infinity : null,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.07),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 22),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label,
-                    style: context.appFonts.bodySmall()?.copyWith(
-                    color: color.withOpacity(0.8),
-                    fontSize: 11,
-                  ),),
-                Text(value,
-                    style: context.appFonts.titleLarge()?.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.bold,
-                  ),),
-                Text(sub,
-                    style: context.appFonts.bodySmall()?.copyWith(
-                    color: context.appColors.colorSecondaryText,
-                    fontSize: 11,
-                  ),),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MiniStat extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color color;
-  const _MiniStat(
-      {required this.label, required this.value, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label,
-              style: context.appFonts.bodySmall()
-                ?.copyWith(color: color.withOpacity(0.8), fontSize: 10),),
-          Text(value,
-              style: context.appFonts.bodySmall()?.copyWith(
-              color: color,
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-            ),),
-        ],
       ),
     );
   }
