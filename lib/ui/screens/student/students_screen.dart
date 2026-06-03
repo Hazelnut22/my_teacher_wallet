@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:my_teacher_wallet/core/app_colors.dart';
 import 'package:my_teacher_wallet/core/app_fonts.dart';
 import 'package:my_teacher_wallet/core/route/routes.dart';
-import 'package:my_teacher_wallet/core/services/app_config_service.dart';
+import 'package:my_teacher_wallet/core/services/shared_preference_service.dart';
 import 'package:my_teacher_wallet/domain/entities/student_entity.dart';
 import 'package:my_teacher_wallet/ui/screens/payment_check/providers/payment_notifier_provider.dart';
 import 'package:my_teacher_wallet/ui/screens/student/providers/student_provider.dart';

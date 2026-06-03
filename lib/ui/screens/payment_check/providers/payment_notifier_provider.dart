@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:my_teacher_wallet/core/services/app_config_service.dart';
+import 'package:my_teacher_wallet/core/services/shared_preference_service.dart';
 import 'package:my_teacher_wallet/domain/entities/student_entity.dart';
 import 'package:my_teacher_wallet/domain/usecases/payment/ensure_monthly_record_use_case.dart';
 import 'package:my_teacher_wallet/domain/usecases/payment/toggle_excluded_use_case.dart';

@@ -63,9 +63,9 @@ class HomeScreen extends ConsumerWidget {
                   // ── Header ────────────────────────────────────────────
                   Text(
                     "My Teacher Wallet",
-                    style: fonts.headlineLarge()?.copyWith(
+                    style: fonts.appBarTitle()?.copyWith(
                       color: colors.colorPrimaryText,
-                      fontSize: 22,
+                      fontWeight: FontWeight.bold
                     ),
                   ),
                   const SizedBox(height: 4),
