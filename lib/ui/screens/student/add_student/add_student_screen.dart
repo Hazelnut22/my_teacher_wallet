@@ -4,6 +4,7 @@ import 'package:my_teacher_wallet/core/app_colors.dart';
 import 'package:my_teacher_wallet/domain/entities/student_entity.dart';
 import 'package:my_teacher_wallet/ui/screens/payment_check/providers/payment_notifier_provider.dart';
 import 'package:my_teacher_wallet/ui/screens/student/providers/student_provider.dart';
+import 'package:my_teacher_wallet/ui/widgets/custom_input_text_field.dart';
 
 class AddStudentScreen extends ConsumerStatefulWidget {
   const AddStudentScreen({super.key});
@@ -65,12 +66,11 @@ class _AddStudentScreenState extends ConsumerState<AddStudentScreen> {
           key: _formKey,
           child: Column(
             children: [
-              _buildField("Student Name", _nameController, colors),
+              CustomInputTextField(label: "Student Name", controller: _nameController),
               const SizedBox(height: 16),
-              _buildField("Grade / Class", _gradeController, colors),
+              CustomInputTextField(label: "Grade / Class", controller: _gradeController),
               const SizedBox(height: 16),
-              _buildField("Monthly Fee (MMK)", _feeController, colors,
-                  isNumber: true),
+              CustomInputTextField(label: "Monthly Fee (MMK)", controller: _feeController, isNumber: true),
               const SizedBox(height: 40),
               SizedBox(
                 width: double.infinity,
@@ -103,43 +103,6 @@ class _AddStudentScreenState extends ConsumerState<AddStudentScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildField(
-    String label,
-    TextEditingController controller,
-    AppColors colors, {
-    bool isNumber = false,
-  }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-      style: TextStyle(color: colors.colorPrimaryText),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(color: colors.colorHint),
-        filled: true,
-        fillColor: colors.colorWhite,
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colors.colorDivider),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colors.colorPrimary, width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colors.colorRedBox),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colors.colorRedBox, width: 2),
-        ),
-      ),
-      validator: (value) =>
-          value == null || value.trim().isEmpty ? "Required" : null,
     );
   }
 }
