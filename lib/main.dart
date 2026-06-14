@@ -55,9 +55,11 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
+    final router = createRouter(ref);
+
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
-      routerConfig: goRouter,
+      routerConfig: router,
       themeMode: themeMode,
       theme: ThemeData(
         brightness: Brightness.light,

@@ -1,20 +1,23 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:my_teacher_wallet/core/services/shared_preference_service.dart';
-import 'package:my_teacher_wallet/ui/screens/auth/providers/auth_state.dart';
+import 'package:my_teacher_wallet/domain/repositories/repository_provider.dart';
+import 'package:my_teacher_wallet/domain/usecases/auth/register_with_email_use_case.dart';
+import 'package:my_teacher_wallet/domain/usecases/auth/sign_in_with_email_use_case.dart';
+import 'package:my_teacher_wallet/domain/usecases/auth/sign_in_with_google_use_case.dart';
+import 'package:my_teacher_wallet/domain/usecases/auth/sign_out_use_case.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:my_teacher_wallet/core/services/shared_preference_service.dart';
 import 'package:my_teacher_wallet/data/database_provider.dart';
+import 'package:my_teacher_wallet/ui/screens/auth/providers/auth_state.dart';
 
 class AuthNotifier extends Notifier<UserAuthState> {
-  late final SupabaseClient _client;
-
   @override
   UserAuthState build() {
-    _client = Supabase.instance.client;
+    final repo = ref.read(authRepositoryProvider);
 
-    // Listen to Supabase auth stream and update state reactively
-    _client.auth.onAuthStateChange.listen((data) {
-      final session = data.session;
+    // React to Supabase session changes (e.g. token expiry, external sign-out)
+    repo.onAuthStateChange.listen((authState) {
+      final session = authState.session;
       if (session != null) {
         state = UserAuthAuthenticated(session.user);
       } else {
@@ -22,10 +25,10 @@ class AuthNotifier extends Notifier<UserAuthState> {
       }
     });
 
-    // Resolve initial state from existing session
-    final session = _client.auth.currentSession;
-    if (session != null) {
-      return UserAuthAuthenticated(session.user);
+    // Resolve initial state synchronously from existing session
+    final currentUser = repo.currentUser;
+    if (currentUser != null) {
+      return UserAuthAuthenticated(currentUser);
     }
     return const UserAuthUnauthenticated();
   }
@@ -38,12 +41,12 @@ class AuthNotifier extends Notifier<UserAuthState> {
   }) async {
     state = const UserAuthLoading();
     try {
-      final response = await _client.auth.signInWithPassword(
-        email: email.trim(),
-        password: password,
-      );
-      if (response.user != null) {
-        state = UserAuthAuthenticated(response.user!);
+      final user = await ref
+          .read(signInWithEmailUseCaseProvider)
+          .execute(email: email, password: password);
+
+      if (user != null) {
+        state = UserAuthAuthenticated(user);
       } else {
         state = const UserAuthError('Login failed. Please try again.');
       }
@@ -61,15 +64,14 @@ class AuthNotifier extends Notifier<UserAuthState> {
   }) async {
     state = const UserAuthLoading();
     try {
-      final response = await _client.auth.signUp(
-        email: email.trim(),
-        password: password,
-        data: {'full_name': name.trim()},
-      );
-      if (response.user != null) {
-        state = UserAuthAuthenticated(response.user!);
+      final user = await ref
+          .read(registerWithEmailUseCaseProvider)
+          .execute(name: name, email: email, password: password);
+
+      if (user != null) {
+        state = UserAuthAuthenticated(user);
       } else {
-        // Supabase may require email confirmation
+        // null means Supabase sent a confirmation email — not an error
         state = const UserAuthError(
           'Registration successful! Please check your email to confirm your account.',
         );
@@ -81,59 +83,33 @@ class AuthNotifier extends Notifier<UserAuthState> {
     }
   }
 
-  // ── Google Sign-In ────────────────────────────────────────────────────────
+  // ── Google ────────────────────────────────────────────────────────────────
 
   Future<void> signInWithGoogle() async {
     state = const UserAuthLoading();
     try {
-      final GoogleSignIn googleSignIn = GoogleSignIn.instance;
-      GoogleSignInAccount? googleUser;
+      final user =
+          await ref.read(signInWithGoogleUseCaseProvider).execute();
 
-      // Check if the current platform supports the direct .authenticate() method
-      if (googleSignIn.supportsAuthenticate()) {
-        googleUser = await googleSignIn.authenticate();
+      if (user != null) {
+        state = UserAuthAuthenticated(user);
       } else {
-        // Note: On Web, you should render the native Google Sign-In button
-        // via GoogleSignInPlatform.instance.renderWebButton() instead of calling this method.
-        state = const UserAuthError(
-          'Interactive sign-in not supported directly on this platform.',
-        );
-        return;
-      }
-
-      // Explicitly handling user cancellation throws an exception in the latest version
-      final googleAuth = await googleUser.authentication;
-      final idToken = googleAuth.idToken;
-      final accessToken = googleAuth.idToken;
-
-      if (idToken == null || accessToken == null) {
-        state = const UserAuthError('Google sign-in failed: missing tokens.');
-        return;
-      }
-
-      // Pass the native tokens directly to Supabase Identity Provider
-      final response = await _client.auth.signInWithIdToken(
-        provider: OAuthProvider.google,
-        idToken: idToken,
-        accessToken: accessToken,
-      );
-
-      if (response.user != null) {
-        state = UserAuthAuthenticated(response.user!);
-      } else {
-        state = const UserAuthError('Google sign-in failed. Please try again.');
+        state =
+            const UserAuthError('Google sign-in failed. Please try again.');
       }
     } on GoogleSignInException catch (e) {
-      // Handling explicit user cancellation or platform configurations
       if (e.code == GoogleSignInExceptionCode.canceled) {
+        // User dismissed the picker — not an error
         state = const UserAuthUnauthenticated();
       } else {
-        state = UserAuthError('Google Plugin Error: ${e.description}');
+        state = UserAuthError('Google error: ${e.description}');
       }
+    } on UnsupportedError catch (e) {
+      state = UserAuthError(e.message ?? 'Platform not supported.');
     } on AuthException catch (e) {
       state = UserAuthError(e.message);
     } catch (e) {
-      state = UserAuthError('Google sign-in error: ${e.toString()}');
+      state = UserAuthError('Unexpected error: ${e.toString()}');
     }
   }
 
@@ -142,28 +118,24 @@ class AuthNotifier extends Notifier<UserAuthState> {
   Future<void> signOut(WidgetRef ref) async {
     state = const UserAuthLoading();
     try {
-      final GoogleSignIn googleSignIn = GoogleSignIn.instance;
+      // 1. Sign out via use case (handles Google + Supabase)
+      await ref.read(signOutUseCaseProvider).execute();
 
-      // Clear session context out of Google native SDK
-      await googleSignIn.signOut();
-
-      // Terminate Supabase session instance
-      await _client.auth.signOut();
-
-      // Clear local data storage
+      // 2. Clear local Isar data
       final isar = ref.read(dbProvider);
       await isar.writeTxn(() async => isar.clear());
+
+      // 3. Clear shared preferences (resets first-use date etc.)
       await SharedPreferenceService.reset();
 
       state = const UserAuthUnauthenticated();
     } catch (e) {
+      // Force unauthenticated even on error so the user is never stuck
       state = const UserAuthUnauthenticated();
     }
   }
 
-  String? get currentUserId => _client.auth.currentUser?.id;
-
-  bool get isAuthenticated => state is UserAuthAuthenticated;
+  // ── Helpers ───────────────────────────────────────────────────────────────
 
   void clearError() {
     if (state is UserAuthError) {

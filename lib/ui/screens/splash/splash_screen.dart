@@ -23,17 +23,24 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   @override
   void initState() {
     super.initState();
+
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 900),
     );
-    _fadeAnim =
-        CurvedAnimation(parent: _controller, curve: Curves.easeIn);
+
+    _fadeAnim = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeIn,
+    );
+
     _scaleAnim = Tween<double>(begin: 0.85, end: 1.0).animate(
-        CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
+    );
 
     _controller.forward();
 
+    // Wait for the animation to finish, then decide where to go
     Future.delayed(const Duration(milliseconds: 1600), () {
       if (!mounted) return;
       _navigate();
@@ -42,10 +49,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   void _navigate() {
     final authState = ref.read(authProvider);
+
     if (authState is UserAuthAuthenticated) {
       context.goNamed(Routes.root.name);
+    } else {
+      // Covers UserAuthUnauthenticated and UserAuthError
+      context.goNamed(Routes.login.name);
     }
-    context.goNamed(Routes.login.name);
   }
 
   @override
@@ -69,6 +79,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                // ── App icon ─────────────────────────────────────────
                 Container(
                   width: 88,
                   height: 88,
@@ -82,7 +93,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     size: 48,
                   ),
                 ),
+
                 const SizedBox(height: 24),
+
+                // ── App name ──────────────────────────────────────────
                 Text(
                   'My Teacher Wallet',
                   style: fonts.headlineLarge()?.copyWith(
@@ -91,14 +105,20 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+
                 const SizedBox(height: 8),
+
+                // ── Tagline ───────────────────────────────────────────
                 Text(
                   'Track fees. Stay organised.',
                   style: fonts.bodyMedium()?.copyWith(
                     color: colors.colorWhite.withOpacity(0.75),
                   ),
                 ),
+
                 const SizedBox(height: 56),
+
+                // ── Loading indicator ─────────────────────────────────
                 SizedBox(
                   width: 24,
                   height: 24,
