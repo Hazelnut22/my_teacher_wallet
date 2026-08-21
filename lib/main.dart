@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:my_teacher_wallet/core/app_config.dart';
+import 'package:my_teacher_wallet/core/app_flavor.dart';
 import 'package:my_teacher_wallet/core/services/auth_service.dart';
 import 'package:my_teacher_wallet/core/services/isar_service.dart';
 import 'package:my_teacher_wallet/core/route/routes.dart';
@@ -11,14 +12,14 @@ import 'package:my_teacher_wallet/core/theme/theme_provider.dart';
 import 'package:my_teacher_wallet/data/database_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-Future<void> main () async {
+Future<void> mainApp() async {
   WidgetsFlutterBinding.ensureInitialized();
   final isarService = IsarService();
   final isarInstance = await isarService.db;
   
-  String supabaseUrl = AppConfig.supabaseUrl;
+  String supabaseUrl = AppFlavor.baseUrl;
   String supabaseKey = AppConfig.supabaseKey;
-  await Supabase.initialize(url: supabaseUrl,anonKey: supabaseKey);
+  await Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey);
 
   runApp(
     ProviderScope(

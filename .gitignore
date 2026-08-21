@@ -45,7 +45,8 @@ app.*.map.json
 /android/app/release
 
 # API Keys
-app_config.json
+dev_config.json
+prod_config.json
 
 # Android signing keys
 **/android/key.properties

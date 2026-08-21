@@ -6,20 +6,29 @@
     "configurations": [
 
         {
-            "name": "my_teacher_wallet",
+            "name": "Teacher Wallet dev",
             "request": "launch",
             "type": "dart",
             "flutterMode": "debug",
-            "program": "lib/main.dart"
+            "program": "lib/main_dev.dart",
+            "args": [
+                "--flavor", "dev",
+                "--dart-define-from-file", "dev_config.json"
+            ]
         },
         {
-            "name": "my_teacher_wallet (profile mode)",
+            "name": "Teacher Wallet",
             "request": "launch",
             "type": "dart",
-            "flutterMode": "profile"
+            "flutterMode": "profile",
+            "program": "lib/main_prod.dart",
+            "args": [
+                "--flavor", "prod",
+                "--dart-define-from-file", "prod_config.json"
+            ]
         },
         {
-            "name": "my_teacher_wallet (release mode)",
+            "name": "Teacher Wallet (release mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release"

@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.my_teacher_wallet"
+    namespace = "com.example.teacherWallet"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -21,7 +21,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.my_teacher_wallet"
+        applicationId = "com.example.teacherWallet"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -45,6 +45,21 @@ android {
             // Signing with the debug keys for now, so `flutter run --release` works.
             // signingConfig = signingConfigs.getByName("debug")
             signingConfig = signingConfigs.getByName("release")
+        }
+    }
+
+    flavorDimensions += "my_teacher_wallet"
+
+    productFlavors {
+        create("dev") {
+            dimension = "my_teacher_wallet"
+            resValue("string", "app_name", "Teacher Wallet Dev")
+            applicationIdSuffix = ".dev"
+        }
+
+        create("prod") {
+            dimension = "my_teacher_wallet"
+            resValue("string", "app_name", "Teacher Wallet")
         }
     }
 }
