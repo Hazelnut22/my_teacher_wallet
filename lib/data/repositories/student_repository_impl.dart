@@ -1,31 +1,51 @@
-import 'package:isar/isar.dart';
-import 'package:my_teacher_wallet/data/models/payment_record.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:my_teacher_wallet/core/services/connectivity_service.dart';
+import 'package:my_teacher_wallet/data/datasources/local/student_local_datasource.dart';
+import 'package:my_teacher_wallet/data/datasources/remote/payment_remote_datasource.dart';
+import 'package:my_teacher_wallet/data/datasources/remote/student_remote_datasource.dart';
 import 'package:my_teacher_wallet/data/models/student.dart';
 import 'package:my_teacher_wallet/domain/entities/student_entity.dart';
 import 'package:my_teacher_wallet/domain/repositories/student_repository.dart';
 
 class StudentRepositoryImpl implements StudentRepository {
-  final Isar isar;
+  final StudentLocalDatasource local;
+  final StudentRemoteDatasource remote;
+  final PaymentRemoteDatasource paymentRemote; // for cascading delete push
+  final SupabaseClient authClient;
 
-  StudentRepositoryImpl(this.isar);
+  StudentRepositoryImpl({
+    required this.local,
+    required this.remote,
+    required this.paymentRemote,
+    required this.authClient,
+  });
+
+  String? get _userId => authClient.auth.currentUser?.id;
+  final ConnectivityService connectivity = ConnectivityService();
+
+  /// Best-effort: pushes to Supabase if logged in + online, silently no-ops otherwise.
+  /// Any failure here is fine — the manual Sync button will reconcile it later.
+  Future<void> _tryPush(Student student) async {
+    final userId = _userId;
+    if (userId == null) return;
+    if (!await connectivity.hasInternet()) return;
+    try {
+      await remote.upsertOne(student, userId);
+    } catch (_) {
+      // swallow — next manual sync will retry via updatedAt diff
+    }
+  }
 
   @override
-  Future<void> deleteStudent(int studentId) async {
-    await isar.writeTxn(() async {
-      // Also delete all related payment records
-      final student = await isar.students.get(studentId);
-      if (student != null) {
-        await student.paymentRecords.load();
-        final paymentIds = student.paymentRecords.map((p) => p.id).toList();
-        await isar.paymentRecords.deleteAll(paymentIds);
-      }
-      await isar.students.delete(studentId);
-    });
+  Future<void> saveStudent(StudentEntity newStudent) async {
+    final model = Student.fromEntity(newStudent);
+    await local.insert(model);
+    await _tryPush(model);
   }
 
   @override
   Future<List<StudentEntity>> getAllStudents() async {
-    final models = await isar.students.where().findAll();
+    final models = await local.getAllActive();
     final entities = <StudentEntity>[];
     for (final model in models) {
       await model.paymentRecords.load();
@@ -35,21 +55,35 @@ class StudentRepositoryImpl implements StudentRepository {
   }
 
   @override
-  Future<void> saveStudent(StudentEntity newStudent) async {
-    final model = Student.fromEntity(newStudent);
-    await isar.writeTxn(() => isar.students.put(model));
-  }
-
-  @override
   Future<void> updateStudent(StudentEntity student) async {
     if (student.id == null) return;
-    final existing = await isar.students.get(student.id!);
+    final existing = await local.getById(student.id!);
     if (existing == null) return;
 
     existing.name = student.name;
     existing.grade = student.grade;
     existing.monthlyFee = student.monthlyFee;
+    existing.updatedAt = DateTime.now();
 
-    await isar.writeTxn(() => isar.students.put(existing));
+    await local.update(existing);
+    await _tryPush(existing);
+  }
+
+  @override
+  Future<void> deleteStudent(int studentId) async {
+    final result = await local.softDelete(studentId);
+    if (result == null) return;
+    final (student, payments) = result;
+
+    final userId = _userId;
+    if (userId == null || !await connectivity.hasInternet()) return;
+
+    try {
+      await remote.upsertOne(student, userId);
+      final pairs = payments.map((p) => MapEntry(p, student.uuid ?? "")).toList();
+      await paymentRemote.upsertManyWithStudentUuids(pairs, userId);
+    } catch (_) {
+      // swallow — manual sync will pick these up via updatedAt diff
+    }
   }
 }

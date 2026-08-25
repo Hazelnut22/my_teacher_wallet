@@ -8,6 +8,8 @@ import 'package:my_teacher_wallet/core/services/shared_preference_service.dart';
 import 'package:my_teacher_wallet/core/theme/theme_provider.dart';
 import 'package:my_teacher_wallet/data/database_provider.dart';
 import 'package:my_teacher_wallet/ui/screens/payment_check/providers/payment_notifier_provider.dart';
+import 'package:my_teacher_wallet/ui/screens/settings/providers/sync_notifier_provider.dart';
+import 'package:my_teacher_wallet/ui/screens/settings/providers/sync_ui_state.dart';
 import 'package:my_teacher_wallet/ui/screens/settings/widgets/settings_list_divider.dart';
 import 'package:my_teacher_wallet/ui/screens/settings/widgets/settings_tile.dart';
 
@@ -79,6 +81,25 @@ class SettingsScreen extends ConsumerWidget {
     final fonts = context.appFonts;
     final isDark = ref.watch(themeModeProvider) == ThemeMode.dark;
 
+    ref.listen<SyncUiState>(syncProvider, (_, next) {
+      if (next.status == SyncStatus.success ||
+          next.status == SyncStatus.error ||
+          next.status == SyncStatus.offline) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.message ?? ''),
+            backgroundColor: next.status == SyncStatus.success
+                ? colors.colorSuccess
+                : colors.colorRedBox,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    });
+
+    final syncState = ref.watch(syncProvider);
+    final isSyncing = syncState.status == SyncStatus.syncing;
+
     return Scaffold(
       backgroundColor: colors.colorNavBarBg,
       appBar: AppBar(
@@ -103,6 +124,26 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
 
+          SettingsListDivider(),
+
+          SettingsTile(
+            icon: Icons.sync,
+            iconColor: colors.colorPrimary,
+            title: isSyncing ? 'Syncing...' : 'Sync Now',
+            trailing: isSyncing
+                ? SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: colors.colorPrimary,
+                    ),
+                  )
+                : null,
+            onTap: isSyncing
+                ? null
+                : () => ref.read(syncProvider.notifier).syncNow(),
+          ),
           SettingsListDivider(),
 
           // ── Reset ───────────────────────────────────────────────────────
