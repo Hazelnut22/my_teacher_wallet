@@ -11,8 +11,10 @@ class AuthRepositoryImpl implements AuthRepository {
   User? get currentUser => _client.auth.currentUser;
 
   @override
-  Stream<AuthState> get onAuthStateChange =>
-      _client.auth.onAuthStateChange;
+  Session? get currentSession => _client.auth.currentSession;
+
+  @override
+  Stream<AuthState> get onAuthStateChange => _client.auth.onAuthStateChange;
 
   // ── Email & Password ──────────────────────────────────────────────────────
 
@@ -55,19 +57,17 @@ class AuthRepositoryImpl implements AuthRepository {
     }
 
     final googleUser = await googleSignIn.authenticate();
-    final googleAuth = await googleUser.authentication;
+    final googleAuth = googleUser.authentication;
 
     final idToken = googleAuth.idToken;
-    final accessToken = googleAuth.idToken;
 
-    if (idToken == null || accessToken == null) {
-      throw Exception('Google sign-in failed: missing tokens.');
+    if (idToken == null) {
+      throw Exception('Google sign-in failed: missing ID token.');
     }
 
     final response = await _client.auth.signInWithIdToken(
       provider: OAuthProvider.google,
       idToken: idToken,
-      accessToken: accessToken,
     );
 
     return response.user;

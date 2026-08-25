@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:my_teacher_wallet/core/app_colors.dart';
@@ -31,7 +29,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
-    await ref.read(authProvider.notifier).signInWithEmail(
+    await ref
+        .read(authProvider.notifier)
+        .signInWithEmail(
           email: _emailController.text,
           password: _passwordController.text,
         );
@@ -131,8 +131,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  style: fonts.bodyMedium()
-                      ?.copyWith(color: colors.colorPrimaryText),
+                  style: fonts.bodyMedium()?.copyWith(
+                    color: colors.colorPrimaryText,
+                  ),
                   decoration: _inputDecoration(
                     colors: colors,
                     hint: 'you@example.com',
@@ -161,8 +162,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 TextFormField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
-                  style: fonts.bodyMedium()
-                      ?.copyWith(color: colors.colorPrimaryText),
+                  style: fonts.bodyMedium()?.copyWith(
+                    color: colors.colorPrimaryText,
+                  ),
                   decoration: _inputDecoration(
                     colors: colors,
                     hint: '••••••••',
@@ -175,8 +177,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         color: colors.colorGray,
                         size: 20,
                       ),
-                      onPressed: () => setState(
-                          () => _obscurePassword = !_obscurePassword),
+                      onPressed: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
                     ),
                   ),
                   validator: (v) {
@@ -196,7 +198,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       backgroundColor: colors.colorPrimary,
                       disabledBackgroundColor: colors.colorButtonDisable,
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                       elevation: 0,
                     ),
                     onPressed: isLoading ? null : _login,
@@ -224,8 +227,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 // ── Divider ───────────────────────────────────────────
                 Row(
                   children: [
-                    Expanded(
-                        child: Divider(color: colors.colorDivider)),
+                    Expanded(child: Divider(color: colors.colorDivider)),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: Text(
@@ -235,8 +237,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       ),
                     ),
-                    Expanded(
-                        child: Divider(color: colors.colorDivider)),
+                    Expanded(child: Divider(color: colors.colorDivider)),
                   ],
                 ),
 
@@ -250,7 +251,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     style: OutlinedButton.styleFrom(
                       side: BorderSide(color: colors.colorDivider),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                       backgroundColor: colors.colorWhite,
                     ),
                     onPressed: isLoading ? null : _googleSignIn,
@@ -319,8 +321,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       suffixIcon: suffix,
       filled: true,
       fillColor: colors.colorWhite,
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: colors.colorDivider),

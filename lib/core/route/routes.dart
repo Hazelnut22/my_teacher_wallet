@@ -54,19 +54,14 @@ GoRouter createRouter(WidgetRef ref) {
       final location = state.matchedLocation;
       final isPublic = _publicRoutes.contains(location);
 
-      // While loading, stay on splash
-      if (authState is UserAuthLoading) {
-        return Routes.splash.path;
-      }
-
-      // Not authenticated — send to login unless already on a public route
-      if (authState is UserAuthUnauthenticated && !isPublic) {
-        return Routes.login.path;
-      }
-
-      // Authenticated — don't allow access to auth screens
+      // Allow navigation actions when state is Authenticated
       if (authState is UserAuthAuthenticated && isPublic) {
         return Routes.root.path;
+      }
+
+      // Only redirect unauthenticated users away from private routes
+      if (authState is UserAuthUnauthenticated && !isPublic) {
+        return Routes.login.path;
       }
 
       return null;

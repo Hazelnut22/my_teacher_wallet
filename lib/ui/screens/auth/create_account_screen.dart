@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:my_teacher_wallet/core/app_colors.dart';
@@ -36,7 +34,9 @@ class _RegisterScreenState extends ConsumerState<CreateAccountScreen> {
 
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
-    await ref.read(authProvider.notifier).registerWithEmail(
+    await ref
+        .read(authProvider.notifier)
+        .registerWithEmail(
           name: _nameController.text,
           email: _emailController.text,
           password: _passwordController.text,
@@ -76,8 +76,11 @@ class _RegisterScreenState extends ConsumerState<CreateAccountScreen> {
         backgroundColor: colors.colorNavBarBg,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new,
-              color: colors.colorPrimaryText, size: 18),
+          icon: Icon(
+            Icons.arrow_back_ios_new,
+            color: colors.colorPrimaryText,
+            size: 18,
+          ),
           onPressed: () => context.goNamed(Routes.login.name),
         ),
       ),
@@ -115,8 +118,9 @@ class _RegisterScreenState extends ConsumerState<CreateAccountScreen> {
                   controller: _nameController,
                   keyboardType: TextInputType.name,
                   textCapitalization: TextCapitalization.words,
-                  style: fonts.bodyMedium()
-                      ?.copyWith(color: colors.colorPrimaryText),
+                  style: fonts.bodyMedium()?.copyWith(
+                    color: colors.colorPrimaryText,
+                  ),
                   decoration: _inputDecoration(
                     colors: colors,
                     hint: 'Your name',
@@ -141,8 +145,9 @@ class _RegisterScreenState extends ConsumerState<CreateAccountScreen> {
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  style: fonts.bodyMedium()
-                      ?.copyWith(color: colors.colorPrimaryText),
+                  style: fonts.bodyMedium()?.copyWith(
+                    color: colors.colorPrimaryText,
+                  ),
                   decoration: _inputDecoration(
                     colors: colors,
                     hint: 'you@example.com',
@@ -167,8 +172,9 @@ class _RegisterScreenState extends ConsumerState<CreateAccountScreen> {
                 TextFormField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
-                  style: fonts.bodyMedium()
-                      ?.copyWith(color: colors.colorPrimaryText),
+                  style: fonts.bodyMedium()?.copyWith(
+                    color: colors.colorPrimaryText,
+                  ),
                   decoration: _inputDecoration(
                     colors: colors,
                     hint: 'Min. 8 characters',
@@ -176,8 +182,8 @@ class _RegisterScreenState extends ConsumerState<CreateAccountScreen> {
                     suffix: _VisibilityToggle(
                       obscure: _obscurePassword,
                       colors: colors,
-                      onTap: () => setState(
-                          () => _obscurePassword = !_obscurePassword),
+                      onTap: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
                     ),
                   ),
                   validator: (v) {
@@ -197,8 +203,9 @@ class _RegisterScreenState extends ConsumerState<CreateAccountScreen> {
                 TextFormField(
                   controller: _confirmController,
                   obscureText: _obscureConfirm,
-                  style: fonts.bodyMedium()
-                      ?.copyWith(color: colors.colorPrimaryText),
+                  style: fonts.bodyMedium()?.copyWith(
+                    color: colors.colorPrimaryText,
+                  ),
                   decoration: _inputDecoration(
                     colors: colors,
                     hint: 'Re-enter password',
@@ -206,8 +213,8 @@ class _RegisterScreenState extends ConsumerState<CreateAccountScreen> {
                     suffix: _VisibilityToggle(
                       obscure: _obscureConfirm,
                       colors: colors,
-                      onTap: () => setState(
-                          () => _obscureConfirm = !_obscureConfirm),
+                      onTap: () =>
+                          setState(() => _obscureConfirm = !_obscureConfirm),
                     ),
                   ),
                   validator: (v) {
@@ -232,7 +239,8 @@ class _RegisterScreenState extends ConsumerState<CreateAccountScreen> {
                       backgroundColor: colors.colorPrimary,
                       disabledBackgroundColor: colors.colorButtonDisable,
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                       elevation: 0,
                     ),
                     onPressed: isLoading ? null : _register,
@@ -302,8 +310,7 @@ class _RegisterScreenState extends ConsumerState<CreateAccountScreen> {
       suffixIcon: suffix,
       filled: true,
       fillColor: colors.colorWhite,
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: colors.colorDivider),
@@ -334,9 +341,9 @@ class _FieldLabel extends StatelessWidget {
     return Text(
       label,
       style: context.appFonts.bodySmall()?.copyWith(
-            color: colors.colorPrimaryText,
-            fontWeight: FontWeight.w600,
-          ),
+        color: colors.colorPrimaryText,
+        fontWeight: FontWeight.w600,
+      ),
     );
   }
 }

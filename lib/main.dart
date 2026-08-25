@@ -16,16 +16,14 @@ Future<void> mainApp() async {
   WidgetsFlutterBinding.ensureInitialized();
   final isarService = IsarService();
   final isarInstance = await isarService.db;
-  
+
   String supabaseUrl = AppFlavor.baseUrl;
   String supabaseKey = AppConfig.supabaseKey;
-  await Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey);
+  await Supabase.initialize(url: supabaseUrl, publishableKey: supabaseKey);
 
   runApp(
     ProviderScope(
-      overrides: [
-        dbProvider.overrideWithValue(isarInstance),
-      ],
+      overrides: [dbProvider.overrideWithValue(isarInstance)],
       child: MyApp(),
     ),
   );
@@ -33,20 +31,22 @@ Future<void> mainApp() async {
 
 void initGoogleSignIn() {
   final GoogleSignIn signIn = GoogleSignIn.instance;
-  
-  unawaited(
-    signIn.initialize(
-      clientId: AuthService.iosClientId, 
-      serverClientId: AuthService.webClientId
-    ).then((_) {
-      // Optional: Listen to global authentication events if you prefer reactive streams
-      signIn.authenticationEvents.listen((event) {
-        // Handle global changes here if necessary
-      });
 
-      // Silently signs the user back in if a valid token is cached
-      signIn.attemptLightweightAuthentication();
-    }),
+  unawaited(
+    signIn
+        .initialize(
+          clientId: AuthService.androidClientId,
+          serverClientId: AuthService.webClientId,
+        )
+        .then((_) {
+          // Optional: Listen to global authentication events if you prefer reactive streams
+          signIn.authenticationEvents.listen((event) {
+            // Handle global changes here if necessary
+          });
+
+          // Silently signs the user back in if a valid token is cached
+          signIn.attemptLightweightAuthentication();
+        }),
   );
 }
 

@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:my_teacher_wallet/domain/repositories/repository_provider.dart';
@@ -11,21 +14,24 @@ import 'package:my_teacher_wallet/data/database_provider.dart';
 import 'package:my_teacher_wallet/ui/screens/auth/providers/auth_state.dart';
 
 class AuthNotifier extends Notifier<UserAuthState> {
+  StreamSubscription? _authSub;
+
   @override
   UserAuthState build() {
     final repo = ref.read(authRepositoryProvider);
 
-    // React to Supabase session changes (e.g. token expiry, external sign-out)
-    repo.onAuthStateChange.listen((authState) {
+    _authSub?.cancel();
+    _authSub = repo.onAuthStateChange.listen((authState) {
       final session = authState.session;
       if (session != null) {
         state = UserAuthAuthenticated(session.user);
-      } else {
+      } else if (state is! UserAuthLoading && state is! UserAuthError) {
         state = const UserAuthUnauthenticated();
       }
     });
 
-    // Resolve initial state synchronously from existing session
+    ref.onDispose(() => _authSub?.cancel());
+
     final currentUser = repo.currentUser;
     if (currentUser != null) {
       return UserAuthAuthenticated(currentUser);
@@ -43,7 +49,8 @@ class AuthNotifier extends Notifier<UserAuthState> {
     try {
       final user = await ref
           .read(signInWithEmailUseCaseProvider)
-          .execute(email: email, password: password);
+          .execute(email: email, password: password)
+          .timeout(const Duration(seconds: 15));
 
       if (user != null) {
         state = UserAuthAuthenticated(user);
@@ -66,20 +73,29 @@ class AuthNotifier extends Notifier<UserAuthState> {
     try {
       final user = await ref
           .read(registerWithEmailUseCaseProvider)
-          .execute(name: name, email: email, password: password);
+          .execute(name: name, email: email, password: password)
+          .timeout(const Duration(seconds: 15));
 
-      if (user != null) {
-        state = UserAuthAuthenticated(user);
+      final session = ref.read(authRepositoryProvider).currentSession;
+
+      if (session != null || state is UserAuthAuthenticated) {
+        if (user != null) {
+          state = UserAuthAuthenticated(user);
+        }
+        debugPrint("Has session: ${session == null}");
+        debugPrint("Response: ${user?.email}");
       } else {
-        // null means Supabase sent a confirmation email — not an error
+        // Session is null -> Email confirmation required
         state = const UserAuthError(
           'Registration successful! Please check your email to confirm your account.',
         );
       }
     } on AuthException catch (e) {
       state = UserAuthError(e.message);
+      debugPrint("Error: ${e.message}");
     } catch (e) {
       state = UserAuthError('Unexpected error: ${e.toString()}');
+      debugPrint("Error: ${e.toString()}");
     }
   }
 
@@ -88,14 +104,15 @@ class AuthNotifier extends Notifier<UserAuthState> {
   Future<void> signInWithGoogle() async {
     state = const UserAuthLoading();
     try {
-      final user =
-          await ref.read(signInWithGoogleUseCaseProvider).execute();
+      final user = await ref
+          .read(signInWithGoogleUseCaseProvider)
+          .execute()
+          .timeout(const Duration(seconds: 30));
 
       if (user != null) {
         state = UserAuthAuthenticated(user);
       } else {
-        state =
-            const UserAuthError('Google sign-in failed. Please try again.');
+        state = const UserAuthError('Google sign-in failed. Please try again.');
       }
     } on GoogleSignInException catch (e) {
       if (e.code == GoogleSignInExceptionCode.canceled) {

@@ -4,6 +4,9 @@ abstract class AuthRepository {
   /// Returns the currently signed-in [User], or null if not authenticated.
   User? get currentUser;
 
+  /// Returns the current session, if the user has completed authentication.
+  Session? get currentSession;
+
   /// Stream that emits whenever the auth session changes.
   Stream<AuthState> get onAuthStateChange;
 
