@@ -7,18 +7,20 @@ class StudentRemoteDatasourceImpl extends StudentRemoteDatasource {
   StudentRemoteDatasourceImpl(this.client);
 
   Map<String, dynamic> _toRow(Student s, String userId) => {
-        'id': s.uuid,
-        'user_id': userId,
-        'name': s.name,
-        'grade': s.grade,
-        'monthly_fee': s.monthlyFee,
-        'updated_at': s.updatedAt?.toUtc().toIso8601String(),
-        'is_deleted': s.isDeleted,
-      };
+    'id': s.uuid,
+    'user_id': userId,
+    'name': s.name,
+    'grade': s.grade,
+    'monthly_fee': s.monthlyFee,
+    'updated_at': s.updatedAt?.toUtc().toIso8601String(),
+    'is_deleted': s.isDeleted,
+  };
 
   @override
   Future<void> upsertOne(Student student, String userId) async {
-    await client.from('students').upsert(_toRow(student, userId), onConflict: 'id');
+    await client
+        .from('students')
+        .upsert(_toRow(student, userId), onConflict: 'id');
   }
 
   @override
@@ -29,11 +31,18 @@ class StudentRemoteDatasourceImpl extends StudentRemoteDatasource {
   }
 
   @override
-  Future<List<Map<String, dynamic>>> fetchAll(String userId, {DateTime? since}) async {
+  Future<List<Map<String, dynamic>>> fetchAll(
+    String userId, {
+    DateTime? since,
+  }) async {
     var query = client.from('students').select().eq('user_id', userId);
     if (since != null) {
       query = query.gt('updated_at', since.toUtc().toIso8601String());
     }
     return await query;
+  }
+
+  Future<void> deleteAllForUser(String userId) async {
+    await client.from('students').delete().eq('user_id', userId);
   }
 }

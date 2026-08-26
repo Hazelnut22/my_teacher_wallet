@@ -19,6 +19,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   late AnimationController _controller;
   late Animation<double> _fadeAnim;
   late Animation<double> _scaleAnim;
+  bool _minDurationElapsed = false;
+  bool _navigated = false;
 
   @override
   void initState() {
@@ -43,17 +45,20 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     // Wait for the animation to finish, then decide where to go
     Future.delayed(const Duration(milliseconds: 1600), () {
       if (!mounted) return;
-      _navigate();
+      _minDurationElapsed = true;
+      _tryNavigate(ref.read(authProvider));
     });
   }
 
-  void _navigate() {
-    final authState = ref.read(authProvider);
+  void _tryNavigate(UserAuthState authState) {
+    if (!_minDurationElapsed || _navigated) return;
+    // Don't navigate on a transient loading/error tick — wait for a settled state.
+    if (authState is UserAuthLoading) return;
 
+    _navigated = true;
     if (authState is UserAuthAuthenticated) {
       context.goNamed(Routes.root.name);
     } else {
-      // Covers UserAuthUnauthenticated and UserAuthError
       context.goNamed(Routes.login.name);
     }
   }
@@ -69,6 +74,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     final colors = context.appColors;
     final fonts = context.appFonts;
 
+    ref.listen<UserAuthState>(authProvider, (_, next) => _tryNavigate(next));
+    
     return Scaffold(
       backgroundColor: colors.colorPrimary,
       body: Center(

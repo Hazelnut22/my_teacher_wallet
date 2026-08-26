@@ -25,8 +25,10 @@ class SyncResult {
 
   factory SyncResult.offline() =>
       const SyncResult(success: false, errorMessage: 'No internet connection.');
-  factory SyncResult.notAuthenticated() =>
-      const SyncResult(success: false, errorMessage: 'You must be signed in to sync.');
+  factory SyncResult.notAuthenticated() => const SyncResult(
+    success: false,
+    errorMessage: 'You must be signed in to sync.',
+  );
   factory SyncResult.error(String message) =>
       SyncResult(success: false, errorMessage: message);
 }
@@ -106,14 +108,16 @@ class SyncService {
     var count = 0;
 
     for (final row in rows) {
-      await studentLocal.upsertFromRemote(Student(
-        name: row['name'] as String,
-        grade: row['grade'] as String,
-        monthlyFee: (row['monthly_fee'] as num).toDouble(),
-        uuid: row['id'] as String,
-        updatedAt: DateTime.parse(row['updated_at'] as String),
-        isDeleted: row['is_deleted'] as bool,
-      ));
+      await studentLocal.upsertFromRemote(
+        Student(
+          name: row['name'] as String,
+          grade: row['grade'] as String,
+          monthlyFee: (row['monthly_fee'] as num).toDouble(),
+          uuid: row['id'] as String,
+          updatedAt: DateTime.parse(row['updated_at'] as String),
+          isDeleted: row['is_deleted'] as bool,
+        ),
+      );
       count++;
     }
     return count;
@@ -126,7 +130,8 @@ class SyncService {
     for (final row in rows) {
       final studentUuid = row['student_id'] as String;
       final parent = await studentLocal.getByUuid(studentUuid);
-      if (parent == null) continue; // parent not synced yet — will catch up next run
+      if (parent == null)
+        continue; // parent not synced yet — will catch up next run
 
       await paymentLocal.upsertFromRemote(
         PaymentRecord(
@@ -143,5 +148,50 @@ class SyncService {
       count++;
     }
     return count;
+  }
+
+  /// Push-only sync — used before logout so we don't waste time pulling
+  /// remote data right before wiping the local DB anyway.
+  Future<SyncResult> pushOnly() async {
+    if (!await ConnectivityService().hasInternet()) return SyncResult.offline();
+
+    final userId = authClient.auth.currentUser?.id;
+    if (userId == null) return SyncResult.notAuthenticated();
+
+    try {
+      final since = await SharedPreferenceService.getLastSyncedAt();
+      final pushedS = await _pushStudents(userId, since);
+      final pushedP = await _pushPayments(userId, since);
+
+      final now = DateTime.now().toUtc();
+      await SharedPreferenceService.setLastSyncedAt(now);
+
+      return SyncResult(
+        success: true,
+        pushed: pushedS + pushedP,
+        syncedAt: now,
+      );
+    } catch (e) {
+      return SyncResult.error(e.toString());
+    }
+  }
+
+  /// Deletes all of this user's rows in Supabase. Requires internet —
+  /// if it fails, the caller should NOT wipe local data (would leave the
+  /// device out of sync with a cloud copy that still exists).
+  Future<SyncResult> resetCloud() async {
+    if (!await ConnectivityService().hasInternet()) return SyncResult.offline();
+
+    final userId = authClient.auth.currentUser?.id;
+    if (userId == null) return SyncResult.notAuthenticated();
+
+    try {
+      // payment_records first (defensive — students cascade-deletes them anyway)
+      await paymentRemote.deleteAllForUser(userId);
+      await studentRemote.deleteAllForUser(userId);
+      return SyncResult(success: true, syncedAt: DateTime.now().toUtc());
+    } catch (e) {
+      return SyncResult.error(e.toString());
+    }
   }
 }

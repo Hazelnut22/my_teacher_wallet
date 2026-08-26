@@ -4,4 +4,5 @@ abstract class StudentRemoteDatasource {
   Future<void> upsertOne(Student student, String userId);
   Future<void> upsertMany(List<Student> students, String userId);
   Future<List<Map<String, dynamic>>> fetchAll(String userId, {DateTime? since});
+  Future<void> deleteAllForUser(String userId);
 }

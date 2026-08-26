@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -14,6 +15,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> mainApp() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  PlatformDispatcher.instance.onError = (error, stack) {
+    debugPrint('Caught background error: $error');
+    return true;
+  };
+  
   final isarService = IsarService();
   final isarInstance = await isarService.db;
 

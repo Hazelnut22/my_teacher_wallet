@@ -6,20 +6,28 @@ class PaymentRemoteDatasourceImpl extends PaymentRemoteDatasource {
   final SupabaseClient client;
   PaymentRemoteDatasourceImpl(this.client);
 
-  Map<String, dynamic>? _toRow(PaymentRecord p, String userId, String studentUuid) => {
-        'id': p.uuid,
-        'student_id': studentUuid,
-        'user_id': userId,
-        'month': p.month.toUtc().toIso8601String(),
-        'is_paid': p.isPaid,
-        'amount_paid': p.amountPaid,
-        'is_excluded': p.isExcluded,
-        'updated_at': p.updatedAt?.toUtc().toIso8601String(),
-        'is_deleted': p.isDeleted,
-      };
+  Map<String, dynamic>? _toRow(
+    PaymentRecord p,
+    String userId,
+    String studentUuid,
+  ) => {
+    'id': p.uuid,
+    'student_id': studentUuid,
+    'user_id': userId,
+    'month': p.month.toUtc().toIso8601String(),
+    'is_paid': p.isPaid,
+    'amount_paid': p.amountPaid,
+    'is_excluded': p.isExcluded,
+    'updated_at': p.updatedAt?.toUtc().toIso8601String(),
+    'is_deleted': p.isDeleted,
+  };
 
   /// [studentUuid] must already be loaded by the caller (record.student.value?.uuid).
-  Future<void> upsertOne(PaymentRecord record, String userId, String studentUuid) async {
+  Future<void> upsertOne(
+    PaymentRecord record,
+    String userId,
+    String studentUuid,
+  ) async {
     final row = _toRow(record, userId, studentUuid);
     if (row == null) return;
     await client.from('payment_records').upsert(row, onConflict: 'id');
@@ -39,11 +47,18 @@ class PaymentRemoteDatasourceImpl extends PaymentRemoteDatasource {
     await client.from('payment_records').upsert(rows, onConflict: 'id');
   }
 
-  Future<List<Map<String, dynamic>>> fetchAll(String userId, {DateTime? since}) async {
+  Future<List<Map<String, dynamic>>> fetchAll(
+    String userId, {
+    DateTime? since,
+  }) async {
     var query = client.from('payment_records').select().eq('user_id', userId);
     if (since != null) {
       query = query.gt('updated_at', since.toUtc().toIso8601String());
     }
     return await query;
+  }
+
+  Future<void> deleteAllForUser(String userId) async {
+    await client.from('payment_records').delete().eq('user_id', userId);
   }
 }

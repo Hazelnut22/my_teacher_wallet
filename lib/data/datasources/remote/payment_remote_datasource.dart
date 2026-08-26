@@ -7,4 +7,5 @@ abstract class PaymentRemoteDatasource {
     String userId,
   );
   Future<List<Map<String, dynamic>>> fetchAll(String userId, {DateTime? since});
+  Future<void> deleteAllForUser(String userId);
 }

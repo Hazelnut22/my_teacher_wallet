@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_teacher_wallet/core/services/connectivity_service.dart';
 import 'package:my_teacher_wallet/data/datasources/local/payment_local_datasource.dart';
@@ -25,17 +26,30 @@ class PaymentRepositoryImpl implements PaymentRepository {
 
   Future<void> _tryPush(PaymentRecord record, String? studentUuid) async {
     final userId = _userId;
-    if (userId == null || studentUuid == null) return;
-    if (!await connectivity.hasInternet()) return;
+    if (userId == null) {
+      debugPrint(
+        '[Sync] Skipped push for payment ${record.uuid}: not signed in.',
+      );
+      return;
+    }
+    if (!await connectivity.hasInternet()) {
+      debugPrint('[Sync] Skipped push for payment ${record.uuid}: offline.');
+      return;
+    }
     try {
-      await remote.upsertOne(record, userId, studentUuid);
-    } catch (_) {
-      // swallow — manual sync reconciles later
+      await remote.upsertOne(record, userId, studentUuid ?? "");
+    } catch (e) {
+      debugPrint(
+        '[Sync] Push failed for payment ${record.uuid}, will retry on next manual sync: $e',
+      );
     }
   }
 
   @override
-  Future<void> addPaymentRecord(PaymentRecordEntity newRecord, int studentId) async {
+  Future<void> addPaymentRecord(
+    PaymentRecordEntity newRecord,
+    int studentId,
+  ) async {
     final student = await studentLocal.getById(studentId);
     if (student == null) return;
 
@@ -57,9 +71,16 @@ class PaymentRepositoryImpl implements PaymentRepository {
   }
 
   @override
-  Future<List<PaymentRecordEntity>> getPaymentsByMonth(int year, int month) async {
+  Future<List<PaymentRecordEntity>> getPaymentsByMonth(
+    int year,
+    int month,
+  ) async {
     final start = DateTime(year, month, 1);
-    final end = DateTime(year, month + 1, 1).subtract(const Duration(milliseconds: 1));
+    final end = DateTime(
+      year,
+      month + 1,
+      1,
+    ).subtract(const Duration(milliseconds: 1));
     final models = await local.getByMonthRange(start, end);
     return models.map((m) => m.toEntity()).toList();
   }
@@ -99,10 +120,12 @@ class PaymentRepositoryImpl implements PaymentRepository {
     for (final student in students) {
       await student.paymentRecords.load();
 
-      final exists = student.paymentRecords.any((p) =>
-          !p.isDeleted &&
-          p.month.year == monthStart.year &&
-          p.month.month == monthStart.month);
+      final exists = student.paymentRecords.any(
+        (p) =>
+            !p.isDeleted &&
+            p.month.year == monthStart.year &&
+            p.month.month == monthStart.month,
+      );
 
       if (!exists) {
         final record = PaymentRecord(month: monthStart);
@@ -113,7 +136,11 @@ class PaymentRepositoryImpl implements PaymentRepository {
   }
 
   @override
-  Future<void> togglePayment(int paymentId, bool isPaid, double monthlyFee) async {
+  Future<void> togglePayment(
+    int paymentId,
+    bool isPaid,
+    double monthlyFee,
+  ) async {
     final record = await local.getById(paymentId);
     if (record == null) return;
 

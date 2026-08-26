@@ -2,17 +2,32 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_teacher_wallet/core/app_colors.dart';
 import 'package:my_teacher_wallet/core/app_fonts.dart';
+import 'package:my_teacher_wallet/ui/screens/auth/providers/auth_provider.dart';
+import 'package:my_teacher_wallet/ui/screens/auth/providers/auth_state.dart';
 import 'package:my_teacher_wallet/ui/screens/home/widgets/stat_card.dart';
 import 'package:my_teacher_wallet/ui/screens/payment_check/providers/payment_notifier_provider.dart';
+import 'package:my_teacher_wallet/ui/screens/settings/providers/sync_notifier_provider.dart';
+import 'package:my_teacher_wallet/ui/screens/settings/providers/sync_ui_state.dart';
 import 'package:my_teacher_wallet/utils/number_formatter.dart';
+import 'package:my_teacher_wallet/utils/username_format.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   String _monthName(int month) {
     const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December',
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     return months[month - 1];
   }
@@ -23,6 +38,8 @@ class HomeScreen extends ConsumerWidget {
     final fonts = context.appFonts;
     final now = DateTime.now();
     final stateAsync = ref.watch(paymentProvider);
+    final authState = ref.watch(authProvider);
+    final displayName = authState is UserAuthAuthenticated ? authState.user.displayName : 'Teacher';
 
     return Scaffold(
       backgroundColor: colors.colorNavBarBg,
@@ -33,19 +50,23 @@ class HomeScreen extends ConsumerWidget {
           data: (paymentState) {
             // currentMonthStudents already sorted: Paid → Unpaid → Excluded
             final students = paymentState.currentMonthStudents;
-            final activeStudents =
-                students.where((s) => !s.isExcludedThisMonth).toList();
+            final activeStudents = students
+                .where((s) => !s.isExcludedThisMonth)
+                .toList();
             final pendingStudents = activeStudents
-                .where((s) =>
-                    s.payments.isEmpty || !s.payments.first.isPaid)
+                .where((s) => s.payments.isEmpty || !s.payments.first.isPaid)
                 .toList();
 
             final totalExpected = activeStudents.fold<double>(
-                0, (sum, s) => sum + s.monthlyFee);
+              0,
+              (sum, s) => sum + s.monthlyFee,
+            );
             final totalCollected = activeStudents.fold<double>(0, (sum, s) {
               return sum +
                   s.payments.fold<double>(
-                      0, (s2, p) => s2 + (p.isPaid ? p.amountPaid : 0));
+                    0,
+                    (s2, p) => s2 + (p.isPaid ? p.amountPaid : 0),
+                  );
             });
             final paidCount = activeStudents
                 .where((s) => s.payments.any((p) => p.isPaid))
@@ -55,25 +76,36 @@ class HomeScreen extends ConsumerWidget {
                 : totalCollected / totalExpected;
 
             return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 20, vertical: 24),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // ── Header ────────────────────────────────────────────
-                  Text(
-                    "My Teacher Wallet",
-                    style: fonts.appBarTitle()?.copyWith(
-                      color: colors.colorPrimaryText,
-                      fontWeight: FontWeight.bold
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "${_monthName(now.month)} ${now.year}",
-                    style: fonts.bodyMedium()?.copyWith(
-                      color: colors.colorSecondaryText,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            displayName,
+                            style: fonts.appBarTitle()?.copyWith(
+                              color: colors.colorPrimaryText,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            "${_monthName(now.month)} ${now.year}",
+                            style: fonts.bodyMedium()?.copyWith(
+                              color: colors.colorSecondaryText,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const _HomeSyncButton(),
+                    ],
                   ),
                   const SizedBox(height: 24),
 
@@ -83,10 +115,7 @@ class HomeScreen extends ConsumerWidget {
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [
-                          colors.colorPrimary,
-                          const Color(0xFF0D5AC4)
-                        ],
+                        colors: [colors.colorPrimary, const Color(0xFF0D5AC4)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -123,23 +152,20 @@ class HomeScreen extends ConsumerWidget {
                           child: LinearProgressIndicator(
                             value: progress,
                             minHeight: 8,
-                            backgroundColor:
-                                Colors.white.withOpacity(0.25),
-                            valueColor:
-                                const AlwaysStoppedAnimation<Color>(
-                                    Colors.white),
+                            backgroundColor: Colors.white.withOpacity(0.25),
+                            valueColor: const AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 10),
                         Row(
-                          mainAxisAlignment:
-                              MainAxisAlignment.spaceBetween,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
                               "$paidCount of ${students.length} students paid",
                               style: fonts.bodySmall()?.copyWith(
-                                color:
-                                    colors.colorWhite.withOpacity(0.85),
+                                color: colors.colorWhite.withOpacity(0.85),
                               ),
                             ),
                             Text(
@@ -173,7 +199,9 @@ class HomeScreen extends ConsumerWidget {
                       Expanded(
                         child: StatCard(
                           label: 'Pending',
-                          value: NumberFormatter.mmk(totalExpected - totalCollected),
+                          value: NumberFormatter.mmk(
+                            totalExpected - totalCollected,
+                          ),
                           icon: Icons.pending_actions_outlined,
                           color: colors.colorRedBox,
                           bgColor: colors.colorRedBox.withOpacity(0.08),
@@ -198,7 +226,9 @@ class HomeScreen extends ConsumerWidget {
                         const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 2),
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: colors.colorRedBox.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
@@ -214,63 +244,67 @@ class HomeScreen extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    ...pendingStudents.map((student) => Container(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: colors.colorWhite,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                                color:
-                                    colors.colorRedBox.withOpacity(0.2)),
+                    ...pendingStudents.map(
+                      (student) => Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colors.colorWhite,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: colors.colorRedBox.withOpacity(0.2),
                           ),
-                          child: Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 18,
-                                backgroundColor:
-                                    colors.colorRedBox.withOpacity(0.1),
-                                child: Text(
-                                  student.name[0].toUpperCase(),
-                                  style: fonts.bodySmall()?.copyWith(
-                                    color: colors.colorRedBox,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
+                        ),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 18,
+                              backgroundColor: colors.colorRedBox.withOpacity(
+                                0.1,
                               ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      student.name,
-                                      style: fonts.titleLarge()?.copyWith(
-                                        color: colors.colorPrimaryText,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Grade: ${student.grade}',
-                                      style: fonts.bodySmall()?.copyWith(
-                                        color: colors.colorSecondaryText,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Text(
-                                NumberFormatter.mmk(student.monthlyFee),
+                              child: Text(
+                                student.name[0].toUpperCase(),
                                 style: fonts.bodySmall()?.copyWith(
                                   color: colors.colorRedBox,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                            ],
-                          ),
-                        )),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    student.name,
+                                    style: fonts.titleLarge()?.copyWith(
+                                      color: colors.colorPrimaryText,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Grade: ${student.grade}',
+                                    style: fonts.bodySmall()?.copyWith(
+                                      color: colors.colorSecondaryText,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Text(
+                              NumberFormatter.mmk(student.monthlyFee),
+                              style: fonts.bodySmall()?.copyWith(
+                                color: colors.colorRedBox,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 24),
                   ],
 
@@ -302,31 +336,32 @@ class HomeScreen extends ConsumerWidget {
                         child: Text(
                           'No students yet.\nAdd students from the Students tab.',
                           textAlign: TextAlign.center,
-                          style: fonts.bodyMedium()
-                              ?.copyWith(color: colors.colorHint),
+                          style: fonts.bodyMedium()?.copyWith(
+                            color: colors.colorHint,
+                          ),
                         ),
                       ),
                     )
                   else
                     // Sorted: Paid → Unpaid → Excluded (from notifier)
                     ...students.map((student) {
-                      final isPaid =
-                          student.payments.any((p) => p.isPaid);
+                      final isPaid = student.payments.any((p) => p.isPaid);
                       final isExcluded = student.isExcludedThisMonth;
                       final statusColor = isExcluded
                           ? colors.colorGray
                           : isPaid
-                              ? colors.colorSuccess
-                              : colors.colorRedBox;
+                          ? colors.colorSuccess
+                          : colors.colorRedBox;
                       return Container(
                         margin: const EdgeInsets.only(bottom: 10),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                         decoration: BoxDecoration(
                           color: colors.colorWhite,
                           borderRadius: BorderRadius.circular(12),
-                          border:
-                              Border.all(color: colors.colorDivider),
+                          border: Border.all(color: colors.colorDivider),
                         ),
                         child: Row(
                           children: [
@@ -355,7 +390,9 @@ class HomeScreen extends ConsumerWidget {
                             ),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 4),
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: statusColor.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(20),
@@ -364,8 +401,8 @@ class HomeScreen extends ConsumerWidget {
                                 isExcluded
                                     ? 'Excluded'
                                     : isPaid
-                                        ? 'Paid'
-                                        : 'Pending',
+                                    ? 'Paid'
+                                    : 'Pending',
                                 style: fonts.bodySmall()?.copyWith(
                                   color: statusColor,
                                   fontWeight: FontWeight.bold,
@@ -382,6 +419,45 @@ class HomeScreen extends ConsumerWidget {
           },
         ),
       ),
+    );
+  }
+}
+
+class _HomeSyncButton extends ConsumerWidget {
+  const _HomeSyncButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colors = context.appColors;
+    final syncState = ref.watch(syncProvider);
+    final isSyncing = syncState.status == SyncStatus.syncing;
+
+    ref.listen<SyncUiState>(syncProvider, (_, next) {
+      if (next.status == SyncStatus.success ||
+          next.status == SyncStatus.error ||
+          next.status == SyncStatus.offline) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.message ?? ''),
+            backgroundColor: next.status == SyncStatus.success
+                ? colors.colorSuccess
+                : colors.colorRedBox,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    });
+
+    return IconButton(
+      icon: isSyncing
+          ? SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2, color: colors.colorPrimary),
+            )
+          : Icon(Icons.sync, color: colors.colorPrimary),
+      onPressed: isSyncing ? null : () => ref.read(syncProvider.notifier).syncNow(),
+      tooltip: 'Sync now',
     );
   }
 }

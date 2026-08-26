@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_teacher_wallet/core/services/connectivity_service.dart';
 import 'package:my_teacher_wallet/data/datasources/local/student_local_datasource.dart';
@@ -27,12 +28,22 @@ class StudentRepositoryImpl implements StudentRepository {
   /// Any failure here is fine — the manual Sync button will reconcile it later.
   Future<void> _tryPush(Student student) async {
     final userId = _userId;
-    if (userId == null) return;
-    if (!await connectivity.hasInternet()) return;
+    if (userId == null) {
+      debugPrint(
+        '[Sync] Skipped push for student ${student.uuid}: not signed in.',
+      );
+      return;
+    }
+    if (!await connectivity.hasInternet()) {
+      debugPrint('[Sync] Skipped push for student ${student.uuid}: offline.');
+      return;
+    }
     try {
       await remote.upsertOne(student, userId);
-    } catch (_) {
-      // swallow — next manual sync will retry via updatedAt diff
+    } catch (e) {
+      debugPrint(
+        '[Sync] Push failed for student ${student.uuid}, will retry on next manual sync: $e',
+      );
     }
   }
 
@@ -80,7 +91,9 @@ class StudentRepositoryImpl implements StudentRepository {
 
     try {
       await remote.upsertOne(student, userId);
-      final pairs = payments.map((p) => MapEntry(p, student.uuid ?? "")).toList();
+      final pairs = payments
+          .map((p) => MapEntry(p, student.uuid ?? ""))
+          .toList();
       await paymentRemote.upsertManyWithStudentUuids(pairs, userId);
     } catch (_) {
       // swallow — manual sync will pick these up via updatedAt diff

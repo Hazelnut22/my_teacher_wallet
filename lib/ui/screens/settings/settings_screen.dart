@@ -7,11 +7,15 @@ import 'package:my_teacher_wallet/core/route/routes.dart';
 import 'package:my_teacher_wallet/core/services/shared_preference_service.dart';
 import 'package:my_teacher_wallet/core/theme/theme_provider.dart';
 import 'package:my_teacher_wallet/data/database_provider.dart';
+import 'package:my_teacher_wallet/ui/screens/auth/providers/auth_provider.dart';
+import 'package:my_teacher_wallet/ui/screens/auth/providers/auth_state.dart';
 import 'package:my_teacher_wallet/ui/screens/payment_check/providers/payment_notifier_provider.dart';
 import 'package:my_teacher_wallet/ui/screens/settings/providers/sync_notifier_provider.dart';
 import 'package:my_teacher_wallet/ui/screens/settings/providers/sync_ui_state.dart';
 import 'package:my_teacher_wallet/ui/screens/settings/widgets/settings_list_divider.dart';
 import 'package:my_teacher_wallet/ui/screens/settings/widgets/settings_tile.dart';
+import 'package:my_teacher_wallet/ui/screens/student/providers/student_provider.dart';
+import 'package:my_teacher_wallet/utils/username_format.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -30,8 +34,9 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ),
         content: Text(
-          'This will permanently delete all students, payment records, '
-          'and reset the app to its initial state. This cannot be undone.',
+          'This will permanently delete all students and payment records from '
+          'both this device and the cloud, and reset the app to its initial '
+          'state. This cannot be undone and requires an internet connection.',
           style: fonts.bodyMedium()?.copyWith(color: colors.colorPrimaryText),
         ),
         actions: [
@@ -58,20 +63,86 @@ class SettingsScreen extends ConsumerWidget {
       ),
     );
 
-    if (confirm == true) {
-      final isar = ref.read(dbProvider);
-      await isar.writeTxn(() async => isar.clear());
-      await SharedPreferenceService.reset();
-      ref.read(paymentProvider.notifier).refresh();
+    if (confirm != true) return;
 
+    final cloudResult = await ref.read(syncServiceProvider).resetCloud();
+    if (!cloudResult.success) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('All data has been reset.'),
+          SnackBar(
+            content: Text(
+              'Could not reset cloud data (${cloudResult.errorMessage}). '
+              'Local data was NOT cleared to avoid it being restored on next sync.',
+            ),
+            backgroundColor: colors.colorRedBox,
             behavior: SnackBarBehavior.floating,
           ),
         );
       }
+      return;
+    }
+
+    final isar = ref.read(dbProvider);
+    await isar.writeTxn(() async => isar.clear());
+    await SharedPreferenceService.reset();
+
+    ref.read(paymentProvider.notifier).refresh();
+    ref.invalidate(studentProvider);
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('All data has been reset.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {
+    final colors = context.appColors;
+    final fonts = context.appFonts;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Log Out',
+          style: fonts.headlineSmall()?.copyWith(
+            color: colors.colorPrimaryText,
+          ),
+        ),
+        content: Text(
+          'You\'ll be signed out from this device. If you\'re online, any '
+          'unsynced changes will be pushed to the cloud first automatically.',
+          style: fonts.bodyMedium()?.copyWith(color: colors.colorPrimaryText),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              'Cancel',
+              style: fonts.bodyMedium()?.copyWith(
+                color: colors.colorSecondaryText,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              'Log Out',
+              style: fonts.bodyMedium()?.copyWith(
+                color: colors.colorRedBox,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await ref.read(authProvider.notifier).signOut();
     }
   }
 
@@ -99,6 +170,9 @@ class SettingsScreen extends ConsumerWidget {
 
     final syncState = ref.watch(syncProvider);
     final isSyncing = syncState.status == SyncStatus.syncing;
+    final authState = ref.watch(authProvider);
+    final user = authState is UserAuthAuthenticated ? authState.user : null;
+    final isLoggingOut = authState is UserAuthLoading;
 
     return Scaffold(
       backgroundColor: colors.colorNavBarBg,
@@ -112,6 +186,55 @@ class SettingsScreen extends ConsumerWidget {
       ),
       body: ListView(
         children: [
+          if (user != null)
+            Container(
+              margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: colors.colorWhite,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: colors.colorDivider),
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 26,
+                    backgroundColor: colors.colorSecondary,
+                    child: Text(
+                      user.displayName.isNotEmpty
+                          ? user.displayName[0].toUpperCase()
+                          : '?',
+                      style: fonts.headlineMedium()?.copyWith(
+                        color: colors.colorPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          user.displayName,
+                          style: fonts.titleLarge()?.copyWith(
+                            color: colors.colorPrimaryText,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (user.email != null)
+                          Text(
+                            user.email!,
+                            style: fonts.bodySmall()?.copyWith(
+                              color: colors.colorSecondaryText,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           // ── Dark mode ───────────────────────────────────────────────────
           SettingsTile(
             icon: Icons.dark_mode_outlined,
@@ -176,6 +299,25 @@ class SettingsScreen extends ConsumerWidget {
             title: 'Help & Info',
             showChevron: true,
             onTap: () => context.pushNamed(Routes.appInfo.name),
+          ),
+          SettingsListDivider(),
+
+          SettingsTile(
+            icon: Icons.logout,
+            iconColor: colors.colorRedBox,
+            title: isLoggingOut ? 'Logging out...' : 'Log Out',
+            titleColor: colors.colorRedBox,
+            trailing: isLoggingOut
+                ? SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: colors.colorRedBox,
+                    ),
+                  )
+                : null,
+            onTap: isLoggingOut ? null : () => _confirmLogout(context, ref),
           ),
 
           const SizedBox(height: 40),

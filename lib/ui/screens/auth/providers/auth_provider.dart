@@ -3,11 +3,13 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:my_teacher_wallet/core/services/connectivity_service.dart';
 import 'package:my_teacher_wallet/domain/repositories/repository_provider.dart';
 import 'package:my_teacher_wallet/domain/usecases/auth/register_with_email_use_case.dart';
 import 'package:my_teacher_wallet/domain/usecases/auth/sign_in_with_email_use_case.dart';
 import 'package:my_teacher_wallet/domain/usecases/auth/sign_in_with_google_use_case.dart';
 import 'package:my_teacher_wallet/domain/usecases/auth/sign_out_use_case.dart';
+import 'package:my_teacher_wallet/ui/screens/settings/providers/sync_notifier_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_teacher_wallet/core/services/shared_preference_service.dart';
 import 'package:my_teacher_wallet/data/database_provider.dart';
@@ -54,6 +56,7 @@ class AuthNotifier extends Notifier<UserAuthState> {
 
       if (user != null) {
         state = UserAuthAuthenticated(user);
+        unawaited(ref.read(syncProvider.notifier).syncNow());
       } else {
         state = const UserAuthError('Login failed. Please try again.');
       }
@@ -81,6 +84,7 @@ class AuthNotifier extends Notifier<UserAuthState> {
       if (session != null || state is UserAuthAuthenticated) {
         if (user != null) {
           state = UserAuthAuthenticated(user);
+          unawaited(ref.read(syncProvider.notifier).syncNow());
         }
         debugPrint("Has session: ${session == null}");
         debugPrint("Response: ${user?.email}");
@@ -111,6 +115,7 @@ class AuthNotifier extends Notifier<UserAuthState> {
 
       if (user != null) {
         state = UserAuthAuthenticated(user);
+        unawaited(ref.read(syncProvider.notifier).syncNow());
       } else {
         state = const UserAuthError('Google sign-in failed. Please try again.');
       }
@@ -132,17 +137,20 @@ class AuthNotifier extends Notifier<UserAuthState> {
 
   // ── Sign Out ──────────────────────────────────────────────────────────────
 
-  Future<void> signOut(WidgetRef ref) async {
+  Future<void> signOut() async {
     state = const UserAuthLoading();
     try {
-      // 1. Sign out via use case (handles Google + Supabase)
+      if (await ConnectivityService().hasInternet()) {
+      await ref.read(syncServiceProvider).pushOnly();
+    }
+
       await ref.read(signOutUseCaseProvider).execute();
 
-      // 2. Clear local Isar data
+      // Clear local Isar data
       final isar = ref.read(dbProvider);
       await isar.writeTxn(() async => isar.clear());
 
-      // 3. Clear shared preferences (resets first-use date etc.)
+      // Clear shared preferences (resets first-use date etc.)
       await SharedPreferenceService.reset();
 
       state = const UserAuthUnauthenticated();
