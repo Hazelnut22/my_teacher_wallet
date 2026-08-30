@@ -8,6 +8,7 @@ import 'package:my_teacher_wallet/ui/screens/payment_check/providers/payment_not
 import 'package:my_teacher_wallet/ui/screens/payment_check/widgets/checklist_card.dart';
 import 'package:my_teacher_wallet/ui/screens/payment_check/widgets/summary_chip.dart';
 import 'package:my_teacher_wallet/ui/screens/payment_check/widgets/year_stat_item.dart';
+import 'package:my_teacher_wallet/ui/widgets/error_state_view.dart';
 import 'package:my_teacher_wallet/utils/number_formatter.dart';
 
 class PaymentCheckScreen extends ConsumerWidget {
@@ -46,7 +47,7 @@ class PaymentCheckScreen extends ConsumerWidget {
       ),
       body: stateAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => ErrorStateView(error: e, onRetry: () => ref.invalidate(paymentProvider)),
         data: (paymentState) {
           // checkStudents already sorted: Unpaid → Paid → Excluded
           final students = paymentState.checkStudents;

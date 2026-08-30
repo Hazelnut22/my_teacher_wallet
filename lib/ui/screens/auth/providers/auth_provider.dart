@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:my_teacher_wallet/core/error/error_mapper.dart';
 import 'package:my_teacher_wallet/core/services/connectivity_service.dart';
 import 'package:my_teacher_wallet/domain/repositories/repository_provider.dart';
 import 'package:my_teacher_wallet/domain/usecases/auth/register_with_email_use_case.dart';
@@ -61,9 +62,9 @@ class AuthNotifier extends Notifier<UserAuthState> {
         state = const UserAuthError('Login failed. Please try again.');
       }
     } on AuthException catch (e) {
-      state = UserAuthError(e.message);
+      state = UserAuthError(ErrorMapper.map(e).message);
     } catch (e) {
-      state = UserAuthError('Unexpected error: ${e.toString()}');
+      state = UserAuthError(ErrorMapper.map(e).message);
     }
   }
 
@@ -95,10 +96,10 @@ class AuthNotifier extends Notifier<UserAuthState> {
         );
       }
     } on AuthException catch (e) {
-      state = UserAuthError(e.message);
+      state = UserAuthError(ErrorMapper.map(e).message);
       debugPrint("Error: ${e.message}");
     } catch (e) {
-      state = UserAuthError('Unexpected error: ${e.toString()}');
+      state = UserAuthError(ErrorMapper.map(e).message);
       debugPrint("Error: ${e.toString()}");
     }
   }
@@ -121,17 +122,18 @@ class AuthNotifier extends Notifier<UserAuthState> {
       }
     } on GoogleSignInException catch (e) {
       if (e.code == GoogleSignInExceptionCode.canceled) {
-        // User dismissed the picker — not an error
         state = const UserAuthUnauthenticated();
       } else {
-        state = UserAuthError('Google error: ${e.description}');
+        state = UserAuthError(ErrorMapper.map(e).message);
       }
     } on UnsupportedError catch (e) {
-      state = UserAuthError(e.message ?? 'Platform not supported.');
+      state = UserAuthError(
+        e.message ?? 'This sign-in method isn\'t supported on this device.',
+      );
     } on AuthException catch (e) {
-      state = UserAuthError(e.message);
+      state = UserAuthError(ErrorMapper.map(e).message);
     } catch (e) {
-      state = UserAuthError('Unexpected error: ${e.toString()}');
+      state = UserAuthError(ErrorMapper.map(e).message);
     }
   }
 
@@ -141,8 +143,8 @@ class AuthNotifier extends Notifier<UserAuthState> {
     state = const UserAuthLoading();
     try {
       if (await ConnectivityService().hasInternet()) {
-      await ref.read(syncServiceProvider).pushOnly();
-    }
+        await ref.read(syncServiceProvider).pushOnly();
+      }
 
       await ref.read(signOutUseCaseProvider).execute();
 

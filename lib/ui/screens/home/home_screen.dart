@@ -8,6 +8,7 @@ import 'package:my_teacher_wallet/ui/screens/home/widgets/stat_card.dart';
 import 'package:my_teacher_wallet/ui/screens/payment_check/providers/payment_notifier_provider.dart';
 import 'package:my_teacher_wallet/ui/screens/settings/providers/sync_notifier_provider.dart';
 import 'package:my_teacher_wallet/ui/screens/settings/providers/sync_ui_state.dart';
+import 'package:my_teacher_wallet/ui/widgets/error_state_view.dart';
 import 'package:my_teacher_wallet/utils/number_formatter.dart';
 import 'package:my_teacher_wallet/utils/username_format.dart';
 
@@ -46,7 +47,7 @@ class HomeScreen extends ConsumerWidget {
       body: SafeArea(
         child: stateAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Error: $e')),
+          error: (err, _) => ErrorStateView(error: err, onRetry: () => ref.invalidate(paymentProvider)),
           data: (paymentState) {
             // currentMonthStudents already sorted: Paid → Unpaid → Excluded
             final students = paymentState.currentMonthStudents;

@@ -1,3 +1,5 @@
+import 'package:my_teacher_wallet/core/constant/network_constants.dart';
+import 'package:my_teacher_wallet/core/error/error_mapper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_teacher_wallet/core/services/connectivity_service.dart';
 import 'package:my_teacher_wallet/core/services/shared_preference_service.dart';
@@ -23,14 +25,16 @@ class SyncResult {
     this.syncedAt,
   });
 
-  factory SyncResult.offline() =>
-      const SyncResult(success: false, errorMessage: 'No internet connection.');
+  factory SyncResult.offline() => const SyncResult(
+    success: false,
+    errorMessage: 'No internet connection. Please try again.',
+  );
   factory SyncResult.notAuthenticated() => const SyncResult(
     success: false,
     errorMessage: 'You must be signed in to sync.',
   );
-  factory SyncResult.error(String message) =>
-      SyncResult(success: false, errorMessage: message);
+  factory SyncResult.error(Object e) =>
+      SyncResult(success: false, errorMessage: ErrorMapper.map(e).message);
 }
 
 class SyncService {
@@ -55,25 +59,29 @@ class SyncService {
     if (userId == null) return SyncResult.notAuthenticated();
 
     try {
-      final since = await SharedPreferenceService.getLastSyncedAt();
-
-      final pushedS = await _pushStudents(userId, since);
-      final pushedP = await _pushPayments(userId, since);
-      final pulledS = await _pullStudents(userId, since);
-      final pulledP = await _pullPayments(userId, since);
-
-      final now = DateTime.now().toUtc();
-      await SharedPreferenceService.setLastSyncedAt(now);
-
-      return SyncResult(
-        success: true,
-        pushed: pushedS + pushedP,
-        pulled: pulledS + pulledP,
-        syncedAt: now,
-      );
+      return await _doSync(userId).timeout(NetworkConstants.syncTimeout);
     } catch (e) {
-      return SyncResult.error(e.toString());
+      return SyncResult.error(e);
     }
+  }
+
+  Future<SyncResult> _doSync(String userId) async {
+    final since = await SharedPreferenceService.getLastSyncedAt();
+
+    final pushedS = await _pushStudents(userId, since);
+    final pushedP = await _pushPayments(userId, since);
+    final pulledS = await _pullStudents(userId, since);
+    final pulledP = await _pullPayments(userId, since);
+
+    final now = DateTime.now().toUtc();
+    await SharedPreferenceService.setLastSyncedAt(now);
+
+    return SyncResult(
+      success: true,
+      pushed: pushedS + pushedP,
+      pulled: pulledS + pulledP,
+      syncedAt: now,
+    );
   }
 
   // ── Push ──────────────────────────────────────────────────────────────
@@ -159,21 +167,21 @@ class SyncService {
     if (userId == null) return SyncResult.notAuthenticated();
 
     try {
-      final since = await SharedPreferenceService.getLastSyncedAt();
-      final pushedS = await _pushStudents(userId, since);
-      final pushedP = await _pushPayments(userId, since);
-
-      final now = DateTime.now().toUtc();
-      await SharedPreferenceService.setLastSyncedAt(now);
-
-      return SyncResult(
-        success: true,
-        pushed: pushedS + pushedP,
-        syncedAt: now,
-      );
+      return await _doPushOnly(userId).timeout(NetworkConstants.syncTimeout);
     } catch (e) {
-      return SyncResult.error(e.toString());
+      return SyncResult.error(e);
     }
+  }
+
+  Future<SyncResult> _doPushOnly(String userId) async {
+    final since = await SharedPreferenceService.getLastSyncedAt();
+    final pushedS = await _pushStudents(userId, since);
+    final pushedP = await _pushPayments(userId, since);
+
+    final now = DateTime.now().toUtc();
+    await SharedPreferenceService.setLastSyncedAt(now);
+
+    return SyncResult(success: true, pushed: pushedS + pushedP, syncedAt: now);
   }
 
   /// Deletes all of this user's rows in Supabase. Requires internet —
@@ -186,12 +194,15 @@ class SyncService {
     if (userId == null) return SyncResult.notAuthenticated();
 
     try {
-      // payment_records first (defensive — students cascade-deletes them anyway)
-      await paymentRemote.deleteAllForUser(userId);
-      await studentRemote.deleteAllForUser(userId);
-      return SyncResult(success: true, syncedAt: DateTime.now().toUtc());
+      return await _doResetCloud(userId).timeout(NetworkConstants.syncTimeout);
     } catch (e) {
-      return SyncResult.error(e.toString());
+      return SyncResult.error(e);
     }
+  }
+
+  Future<SyncResult> _doResetCloud(String userId) async {
+    await paymentRemote.deleteAllForUser(userId);
+    await studentRemote.deleteAllForUser(userId);
+    return SyncResult(success: true, syncedAt: DateTime.now().toUtc());
   }
 }

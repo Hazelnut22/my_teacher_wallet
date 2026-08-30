@@ -6,6 +6,7 @@ import 'package:my_teacher_wallet/ui/screens/payment_check/providers/payment_not
 import 'package:my_teacher_wallet/ui/screens/payment_check/widgets/highlight_card.dart';
 import 'package:my_teacher_wallet/ui/screens/payment_check/widgets/mini_stat.dart';
 import 'package:my_teacher_wallet/ui/screens/payment_check/widgets/section_tile.dart';
+import 'package:my_teacher_wallet/ui/widgets/error_state_view.dart';
 import 'package:my_teacher_wallet/utils/number_formatter.dart';
 
 const _monthNames = [
@@ -36,7 +37,7 @@ class ReportScreen extends ConsumerWidget {
       ),
       body: stateAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => ErrorStateView(error: e, onRetry: () => ref.invalidate(paymentProvider)),
         data: (paymentState) {
           final report = paymentState.reportData;
           if (report.monthlyBreakdown.isEmpty) {

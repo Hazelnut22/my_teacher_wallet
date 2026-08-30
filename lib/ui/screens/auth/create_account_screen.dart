@@ -123,7 +123,7 @@ class _RegisterScreenState extends ConsumerState<CreateAccountScreen> {
                   ),
                   decoration: _inputDecoration(
                     colors: colors,
-                    hint: 'Your name',
+                    hint: 'Enter your name',
                     icon: Icons.person_outline,
                   ),
                   validator: (v) {
@@ -150,7 +150,7 @@ class _RegisterScreenState extends ConsumerState<CreateAccountScreen> {
                   ),
                   decoration: _inputDecoration(
                     colors: colors,
-                    hint: 'you@example.com',
+                    hint: 'Enter your email',
                     icon: Icons.email_outlined,
                   ),
                   validator: (v) {
@@ -177,7 +177,7 @@ class _RegisterScreenState extends ConsumerState<CreateAccountScreen> {
                   ),
                   decoration: _inputDecoration(
                     colors: colors,
-                    hint: 'Min. 8 characters',
+                    hint: 'Enter your password',
                     icon: Icons.lock_outline,
                     suffix: _VisibilityToggle(
                       obscure: _obscurePassword,

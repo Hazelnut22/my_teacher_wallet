@@ -1,3 +1,4 @@
+import 'package:my_teacher_wallet/core/constant/network_constants.dart';
 import 'package:my_teacher_wallet/data/datasources/remote/payment_remote_datasource.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_teacher_wallet/data/models/payment_record.dart';
@@ -22,7 +23,7 @@ class PaymentRemoteDatasourceImpl extends PaymentRemoteDatasource {
     'is_deleted': p.isDeleted,
   };
 
-  /// [studentUuid] must already be loaded by the caller (record.student.value?.uuid).
+  @override
   Future<void> upsertOne(
     PaymentRecord record,
     String userId,
@@ -30,10 +31,13 @@ class PaymentRemoteDatasourceImpl extends PaymentRemoteDatasource {
   ) async {
     final row = _toRow(record, userId, studentUuid);
     if (row == null) return;
-    await client.from('payment_records').upsert(row, onConflict: 'id');
+    await client
+        .from('payment_records')
+        .upsert(row, onConflict: 'id')
+        .timeout(NetworkConstants.requestTimeout);
   }
 
-  /// [records] paired with their parent uuid, e.g. via a Map<PaymentRecord,String>.
+  @override
   Future<void> upsertManyWithStudentUuids(
     List<MapEntry<PaymentRecord, String>> recordsWithStudentUuid,
     String userId,
@@ -44,9 +48,13 @@ class PaymentRemoteDatasourceImpl extends PaymentRemoteDatasource {
         .whereType<Map<String, dynamic>>()
         .toList();
     if (rows.isEmpty) return;
-    await client.from('payment_records').upsert(rows, onConflict: 'id');
+    await client
+        .from('payment_records')
+        .upsert(rows, onConflict: 'id')
+        .timeout(NetworkConstants.requestTimeout);
   }
 
+  @override
   Future<List<Map<String, dynamic>>> fetchAll(
     String userId, {
     DateTime? since,
@@ -55,10 +63,15 @@ class PaymentRemoteDatasourceImpl extends PaymentRemoteDatasource {
     if (since != null) {
       query = query.gt('updated_at', since.toUtc().toIso8601String());
     }
-    return await query;
+    return await query.timeout(NetworkConstants.requestTimeout);
   }
 
+  @override
   Future<void> deleteAllForUser(String userId) async {
-    await client.from('payment_records').delete().eq('user_id', userId);
+    await client
+        .from('payment_records')
+        .delete()
+        .eq('user_id', userId)
+        .timeout(NetworkConstants.requestTimeout);
   }
 }

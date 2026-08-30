@@ -1,3 +1,4 @@
+import 'package:my_teacher_wallet/core/constant/network_constants.dart';
 import 'package:my_teacher_wallet/data/datasources/remote/student_remote_datasource.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:my_teacher_wallet/data/models/student.dart';
@@ -20,14 +21,18 @@ class StudentRemoteDatasourceImpl extends StudentRemoteDatasource {
   Future<void> upsertOne(Student student, String userId) async {
     await client
         .from('students')
-        .upsert(_toRow(student, userId), onConflict: 'id');
+        .upsert(_toRow(student, userId), onConflict: 'id')
+        .timeout(NetworkConstants.requestTimeout);
   }
 
   @override
   Future<void> upsertMany(List<Student> students, String userId) async {
     if (students.isEmpty) return;
     final rows = students.map((s) => _toRow(s, userId)).toList();
-    await client.from('students').upsert(rows, onConflict: 'id');
+    await client
+        .from('students')
+        .upsert(rows, onConflict: 'id')
+        .timeout(NetworkConstants.requestTimeout);
   }
 
   @override
@@ -39,10 +44,15 @@ class StudentRemoteDatasourceImpl extends StudentRemoteDatasource {
     if (since != null) {
       query = query.gt('updated_at', since.toUtc().toIso8601String());
     }
-    return await query;
+    return await query.timeout(NetworkConstants.requestTimeout);
   }
 
+  @override
   Future<void> deleteAllForUser(String userId) async {
-    await client.from('students').delete().eq('user_id', userId);
+    await client
+        .from('students')
+        .delete()
+        .eq('user_id', userId)
+        .timeout(NetworkConstants.requestTimeout);
   }
 }

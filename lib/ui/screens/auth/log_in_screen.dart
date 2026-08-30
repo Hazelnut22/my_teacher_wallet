@@ -136,7 +136,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   decoration: _inputDecoration(
                     colors: colors,
-                    hint: 'you@example.com',
+                    hint: 'Enter your email',
                     icon: Icons.email_outlined,
                   ),
                   validator: (v) {
@@ -167,7 +167,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   decoration: _inputDecoration(
                     colors: colors,
-                    hint: '••••••••',
+                    hint: 'Enter your password',
                     icon: Icons.lock_outline,
                     suffix: IconButton(
                       icon: Icon(
@@ -225,58 +225,58 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 20),
 
                 // ── Divider ───────────────────────────────────────────
-                Row(
-                  children: [
-                    Expanded(child: Divider(color: colors.colorDivider)),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Text(
-                        'or continue with',
-                        style: fonts.bodySmall()?.copyWith(
-                          color: colors.colorSecondaryText,
-                        ),
-                      ),
-                    ),
-                    Expanded(child: Divider(color: colors.colorDivider)),
-                  ],
-                ),
+                // Row(
+                //   children: [
+                //     Expanded(child: Divider(color: colors.colorDivider)),
+                //     Padding(
+                //       padding: const EdgeInsets.symmetric(horizontal: 12),
+                //       child: Text(
+                //         'or continue with',
+                //         style: fonts.bodySmall()?.copyWith(
+                //           color: colors.colorSecondaryText,
+                //         ),
+                //       ),
+                //     ),
+                //     Expanded(child: Divider(color: colors.colorDivider)),
+                //   ],
+                // ),
 
-                const SizedBox(height: 20),
+                // const SizedBox(height: 20),
 
-                // ── Google button ─────────────────────────────────────
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: colors.colorDivider),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      backgroundColor: colors.colorWhite,
-                    ),
-                    onPressed: isLoading ? null : _googleSignIn,
-                    icon: Image.asset(
-                      'assets/images/google_logo.png',
-                      width: 20,
-                      height: 20,
-                      errorBuilder: (_, __, ___) => Icon(
-                        Icons.g_mobiledata,
-                        color: colors.colorPrimaryText,
-                        size: 24,
-                      ),
-                    ),
-                    label: Text(
-                      'Sign in with Google',
-                      style: fonts.bodyMedium()?.copyWith(
-                        color: colors.colorPrimaryText,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ),
+                // // ── Google button ─────────────────────────────────────
+                // SizedBox(
+                //   width: double.infinity,
+                //   height: 52,
+                //   child: OutlinedButton.icon(
+                //     style: OutlinedButton.styleFrom(
+                //       side: BorderSide(color: colors.colorDivider),
+                //       shape: RoundedRectangleBorder(
+                //         borderRadius: BorderRadius.circular(14),
+                //       ),
+                //       backgroundColor: colors.colorWhite,
+                //     ),
+                //     onPressed: isLoading ? null : _googleSignIn,
+                //     icon: Image.asset(
+                //       'assets/images/google_logo.png',
+                //       width: 20,
+                //       height: 20,
+                //       errorBuilder: (_, __, ___) => Icon(
+                //         Icons.g_mobiledata,
+                //         color: colors.colorPrimaryText,
+                //         size: 24,
+                //       ),
+                //     ),
+                //     label: Text(
+                //       'Sign in with Google',
+                //       style: fonts.bodyMedium()?.copyWith(
+                //         color: colors.colorPrimaryText,
+                //         fontWeight: FontWeight.w500,
+                //       ),
+                //     ),
+                //   ),
+                // ),
 
-                const SizedBox(height: 32),
+                // const SizedBox(height: 32),
 
                 // ── Register link ─────────────────────────────────────
                 Row(

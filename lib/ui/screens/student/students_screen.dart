@@ -10,6 +10,7 @@ import 'package:my_teacher_wallet/domain/entities/student_entity.dart';
 import 'package:my_teacher_wallet/ui/screens/payment_check/providers/payment_notifier_provider.dart';
 import 'package:my_teacher_wallet/ui/screens/student/providers/student_provider.dart';
 import 'package:my_teacher_wallet/ui/screens/student/widgets/swipable_student_card.dart';
+import 'package:my_teacher_wallet/ui/widgets/error_state_view.dart';
 
 class StudentsScreen extends ConsumerStatefulWidget {
   const StudentsScreen({super.key});
@@ -190,7 +191,7 @@ class _StudentsScreenState extends ConsumerState<StudentsScreen> {
           Expanded(
             child: stateAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, _) => Center(child: Text('Error: $err')),
+              error: (e, _) => ErrorStateView(error: e, onRetry: () => ref.invalidate(paymentProvider)),
               data: (paymentState) {
                 final allStudents = paymentState.currentMonthStudents;
                 final students = _filtered(allStudents);
