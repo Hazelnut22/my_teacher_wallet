@@ -50,7 +50,9 @@ class _EditStudentScreenState extends ConsumerState<EditStudentScreen> {
 
     await ref.read(studentProvider.notifier).updateStudent(updated);
 
-    if (mounted) Navigator.pop(context);
+    if (mounted) {
+      Navigator.pop(context, updated);
+    }
   }
 
   Future<void> _delete() async {

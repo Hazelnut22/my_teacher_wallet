@@ -233,10 +233,17 @@ class _StudentsScreenState extends ConsumerState<StudentsScreen> {
                                     Routes.studentDetail.name,
                                     extra: student,
                                   ),
-                                  onEdit: () => context.pushNamed(
-                                    Routes.editStudent.name,
-                                    extra: student,
-                                  ),
+                                  onEdit: () async {
+                                    final updatedStudent =
+                                        await context.pushNamed<StudentEntity?>(
+                                      Routes.editStudent.name,
+                                      extra: student,
+                                    );
+
+                                    if (updatedStudent != null) {
+                                      ref.read(paymentProvider.notifier).refresh();
+                                    }
+                                  },
                                   onDelete: () async {
                                     final confirm = await _confirmDelete(
                                       context,
@@ -288,7 +295,7 @@ class _StudentsScreenState extends ConsumerState<StudentsScreen> {
           Text(
             _query.isNotEmpty
                 ? 'No students match "$_query"'
-                : 'No students added yet',
+                : 'No students added',
             style:  context.appFonts.bodyLarge()?.copyWith(color: colors.colorPrimaryText),
           ),
           if (_query.isEmpty) ...[

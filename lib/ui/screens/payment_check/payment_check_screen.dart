@@ -216,7 +216,7 @@ class PaymentCheckScreen extends ConsumerWidget {
                 Center(
                   child: Padding(
                     padding: const EdgeInsets.all(32),
-                    child: Text('No students found.',
+                    child: Text('No students found',
                         style: fonts.bodyMedium()
                           ?.copyWith(color: colors.colorHint),)
                   ),

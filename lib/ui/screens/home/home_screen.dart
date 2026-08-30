@@ -334,7 +334,7 @@ class HomeScreen extends ConsumerWidget {
                       child: Padding(
                         padding: const EdgeInsets.all(32.0),
                         child: Text(
-                          'No students yet.\nAdd students from the Students tab.',
+                          'No students yet',
                           textAlign: TextAlign.center,
                           style: fonts.bodyMedium()?.copyWith(
                             color: colors.colorHint,

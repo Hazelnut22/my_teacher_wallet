@@ -26,7 +26,7 @@ Future<void> mainApp() async {
 
   String supabaseUrl = AppFlavor.baseUrl;
   String supabaseKey = AppConfig.supabaseKey;
-  await Supabase.initialize(url: supabaseUrl, publishableKey: supabaseKey);
+  await Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey);
 
   runApp(
     ProviderScope(

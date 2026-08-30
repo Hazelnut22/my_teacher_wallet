@@ -27,10 +27,11 @@ class SyncNotifier extends Notifier<SyncUiState> {
     final result = await ref.read(syncServiceProvider).sync();
 
     if (result.success) {
+      debugPrint("${result.pushed} sent, ${result.pulled} received");
       state = SyncUiState(
         status: SyncStatus.success,
         lastSyncedAt: result.syncedAt,
-        message: 'Synced • ${result.pushed} sent, ${result.pulled} received',
+        message: 'Synced successfully',
       );
       ref.invalidate(studentProvider);
       ref.invalidate(paymentProvider);

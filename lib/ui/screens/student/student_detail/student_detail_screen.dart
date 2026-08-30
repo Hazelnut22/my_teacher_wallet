@@ -24,10 +24,24 @@ final studentHistoryProvider =
       return sorted.map((p) => p.toEntity()).toList();
     });
 
-class StudentDetailScreen extends ConsumerWidget {
+class StudentDetailScreen extends ConsumerStatefulWidget {
   final StudentEntity student;
 
   const StudentDetailScreen({super.key, required this.student});
+
+  @override
+  ConsumerState<StudentDetailScreen> createState() =>
+      _StudentDetailScreenState();
+}
+
+class _StudentDetailScreenState extends ConsumerState<StudentDetailScreen> {
+  late StudentEntity _student;
+
+  @override
+  void initState() {
+    super.initState();
+    _student = widget.student;
+  }
 
   String _formatMonth(DateTime date) {
     const months = [
@@ -48,16 +62,16 @@ class StudentDetailScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final colors = context.appColors;
     final fonts = context.appFonts;
-    final historyAsync = ref.watch(studentHistoryProvider(student.id ?? 0));
+    final historyAsync = ref.watch(studentHistoryProvider(_student.id ?? 0));
 
     return Scaffold(
       backgroundColor: colors.colorNavBarBg,
       appBar: AppBar(
         title: Text(
-          student.name,
+          _student.name,
           style: fonts.appBarTitle()?.copyWith(color: colors.colorPrimaryText),
         ),
         backgroundColor: colors.colorNavBarBg,
@@ -67,12 +81,19 @@ class StudentDetailScreen extends ConsumerWidget {
           IconButton(
             icon: Icon(Icons.edit_outlined, color: colors.colorPrimary),
             onPressed: () async {
-              await context.pushNamed(Routes.editStudent.name, extra: student);
-              // Refresh payment provider after edit
-              ref.read(paymentProvider.notifier).refresh();
-              // ignore: use_build_context_synchronously
-              if (context.mounted) {
-                ref.invalidate(studentHistoryProvider(student.id ?? 0));
+              final updatedStudent =
+                  await context.pushNamed<StudentEntity?>(
+                Routes.editStudent.name,
+                extra: _student,
+              );
+
+              if (updatedStudent != null) {
+                setState(() {
+                  _student = updatedStudent;
+                });
+
+                ref.read(paymentProvider.notifier).refresh();
+                ref.invalidate(studentHistoryProvider(_student.id ?? 0));
               }
             },
           ),
@@ -95,7 +116,7 @@ class StudentDetailScreen extends ConsumerWidget {
                   radius: 28,
                   backgroundColor: colors.colorSecondary,
                   child: Text(
-                    student.name[0].toUpperCase(),
+                    _student.name[0].toUpperCase(),
                     style: fonts.headlineMedium()?.copyWith(
                       color: colors.colorPrimary,
                       fontWeight: FontWeight.bold,
@@ -108,14 +129,14 @@ class StudentDetailScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        student.name,
+                        _student.name,
                         style: fonts.headlineSmall()?.copyWith(
                           color: colors.colorPrimaryText,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(
-                        "Grade: ${student.grade}",
+                        "Grade: ${_student.grade}",
                         style: fonts.bodySmall()?.copyWith(
                           color: colors.colorSecondaryText,
                         ),
@@ -127,7 +148,7 @@ class StudentDetailScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      "${student.monthlyFee.toStringAsFixed(0)}",
+                      _student.monthlyFee.toStringAsFixed(0),
                       style: fonts.headlineSmall()?.copyWith(
                         color: colors.colorPrimary,
                         fontWeight: FontWeight.bold,
