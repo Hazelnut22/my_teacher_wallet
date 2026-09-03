@@ -27,12 +27,12 @@ enum Routes {
   students('students', '/students'),
   payment('payment', '/payment'),
   settings('settings', '/settings'),
-  addStudents('addStudents', 'addStudents'),
-  studentDetail('studentDetail', 'studentDetail'),
-  editStudent('editStudent', 'editStudent'),
-  reports('reports', 'reports'),
-  about('about', 'about'),
-  appInfo('appInfo', 'appInfo');
+  addStudents('addStudents', '/addStudents'),
+  studentDetail('studentDetail', '/studentDetail'),
+  editStudent('editStudent', '/editStudent'),
+  reports('reports', '/reports'),
+  about('about', '/about'),
+  appInfo('appInfo', '/appInfo');
 
   const Routes(this.name, this.path);
   final String name;
@@ -84,7 +84,7 @@ GoRouter createRouter(WidgetRef ref) {
         builder: (context, state) => const CreateAccountScreen(),
       ),
 
-      // ── Main app shell (bottom nav) ───────────────────────────────────────
+      // ── Main app shell ───────────────────────────────────────
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
             MainScreen(navigationShell: navigationShell),
@@ -98,81 +98,74 @@ GoRouter createRouter(WidgetRef ref) {
               ),
             ],
           ),
-
           StatefulShellBranch(
             routes: [
               GoRoute(
                 path: Routes.students.path,
                 name: Routes.students.name,
                 builder: (context, state) => const StudentsScreen(),
-                routes: [
-                  GoRoute(
-                    path: Routes.addStudents.path,
-                    name: Routes.addStudents.name,
-                    builder: (context, state) => const AddStudentScreen(),
-                  ),
-                  GoRoute(
-                    path: Routes.studentDetail.path,
-                    name: Routes.studentDetail.name,
-                    builder: (context, state) {
-                      final student = state.extra as StudentEntity;
-                      return StudentDetailScreen(student: student);
-                    },
-                    routes: [
-                      GoRoute(
-                        path: Routes.editStudent.path,
-                        name: Routes.editStudent.name,
-                        builder: (context, state) {
-                          final student = state.extra as StudentEntity;
-                          return EditStudentScreen(student: student);
-                        },
-                      ),
-                    ],
-                  ),
-                ],
+                // no nested routes here anymore
               ),
             ],
           ),
-
           StatefulShellBranch(
             routes: [
               GoRoute(
                 path: Routes.payment.path,
                 name: Routes.payment.name,
                 builder: (context, state) => const PaymentCheckScreen(),
-                routes: [
-                  GoRoute(
-                    path: Routes.reports.path,
-                    name: Routes.reports.name,
-                    builder: (context, state) => const ReportScreen(),
-                  ),
-                ],
+                // no nested routes here anymore
               ),
             ],
           ),
-
           StatefulShellBranch(
             routes: [
               GoRoute(
                 path: Routes.settings.path,
                 name: Routes.settings.name,
                 builder: (context, state) => const SettingsScreen(),
-                routes: [
-                  GoRoute(
-                    path: Routes.about.path,
-                    name: Routes.about.name,
-                    builder: (context, state) => const AboutScreen(),
-                  ),
-                  GoRoute(
-                    path: Routes.appInfo.path,
-                    name: Routes.appInfo.name,
-                    builder: (context, state) => const AppInfoScreen(),
-                  ),
-                ],
+                // no nested routes here anymore
               ),
             ],
           ),
         ],
+      ),
+
+      GoRoute(
+        path: Routes.addStudents.path,
+        name: Routes.addStudents.name,
+        builder: (context, state) => const AddStudentScreen(),
+      ),
+      GoRoute(
+        path: Routes.studentDetail.path,
+        name: Routes.studentDetail.name,
+        builder: (context, state) {
+          final student = state.extra as StudentEntity;
+          return StudentDetailScreen(student: student);
+        },
+      ),
+      GoRoute(
+        path: Routes.editStudent.path,
+        name: Routes.editStudent.name,
+        builder: (context, state) {
+          final student = state.extra as StudentEntity;
+          return EditStudentScreen(student: student);
+        },
+      ),
+      GoRoute(
+        path: Routes.reports.path,
+        name: Routes.reports.name,
+        builder: (context, state) => const ReportScreen(),
+      ),
+      GoRoute(
+        path: Routes.about.path,
+        name: Routes.about.name,
+        builder: (context, state) => const AboutScreen(),
+      ),
+      GoRoute(
+        path: Routes.appInfo.path,
+        name: Routes.appInfo.name,
+        builder: (context, state) => const AppInfoScreen(),
       ),
     ],
   );
